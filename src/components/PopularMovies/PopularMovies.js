@@ -5,12 +5,30 @@ import styles from './PopularMovies.module.scss'
 
 import { getImageUrl } from '@/lib/tmdb'
 
-export default function PopularMovies({ movies }) {
+export default function PopularMovies({ movies = [] }) {
+  const visibleMovies = Array.isArray(movies) ? movies.slice(0, 7) : []
+
+  if (visibleMovies.length === 0) {
+    return (
+      <section className={styles.section}>
+        <div className="container">
+          <div className={styles.header}>
+            <h2 className={styles.title}>Фильмы</h2>
+          </div>
+
+          <div className={styles.emptyState}>
+            Фильмы в каталоге ещё не добавлены.
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className={styles.section}>
       <div className="container">
         <div className={styles.header}>
-          <h2 className={styles.title}>Популярные фильмы</h2>
+          <h2 className={styles.title}>Фильмы</h2>
 
           <Link href="/movies" className={styles.all}>
             Смотреть все <span>→</span>
@@ -18,15 +36,15 @@ export default function PopularMovies({ movies }) {
         </div>
 
         <div className={styles.grid}>
-          {movies.slice(0, 7).map((movie) => (
+          {visibleMovies.map((movie) => (
             <Link
-              href={`/movies/${movie.id}`}
+              href={`/movies/${movie.slug}`}
               className={styles.card}
-              key={movie.id}
+              key={movie.slug || movie.id}
             >
               <div className={styles.poster}>
                 <Image
-                  src={getImageUrl(movie.poster_path)}
+                  src={movie.poster || getImageUrl(movie.poster_path)}
                   alt={movie.title}
                   fill
                   sizes="(max-width: 768px) 140px, 180px"
@@ -36,12 +54,12 @@ export default function PopularMovies({ movies }) {
               <h3 className={styles.name}>{movie.title}</h3>
 
               <div className={styles.info}>
-                <span>{movie.release_date?.slice(0, 4)}</span>
+                <span>{movie.release_date?.slice(0, 4) || '—'}</span>
 
                 <span className={styles.rating}>
                   <span>★</span>
 
-                  {movie.vote_average.toFixed(1)}
+                  {Number(movie.vote_average || 0).toFixed(1)}
                 </span>
               </div>
             </Link>

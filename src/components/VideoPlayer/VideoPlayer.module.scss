@@ -1,0 +1,29 @@
+.playerWrapper {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #020b14;
+  border: 1px solid rgba(79, 133, 192, 0.35);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+}
+
+.player {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #020b14;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px dashed rgba(126, 161, 210, 0.45);
+  background: rgba(5, 18, 32, 0.7);
+  color: #dfeaf8;
+  text-align: center;
+  font-size: 16px;
+}

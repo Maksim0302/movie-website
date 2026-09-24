@@ -15,8 +15,8 @@ export default function Header() {
           <Link href="/" className="logo">
             <Image
               src="/img/logo/logo.png"
-              width={100}
-              height={20}
+              width={130}
+              height={30}
               alt="КиноТерапия"
             />
           </Link>
