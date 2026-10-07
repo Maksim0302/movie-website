@@ -18,18 +18,27 @@ const siteUrl = getSiteUrl()
 
 export const metadata = {
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
+
   title: {
     default: 'КиноТерапия',
     template: '%s | КиноТерапия',
   },
+
   description:
     'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
+
+  verification: {
+    google: 'pgnIJp98x4AINyr8BSJs-18x6LIYAVmplyPwSAZoIOQ',
+  },
+
   alternates: {
     canonical: '/',
   },
+
   icons: {
     icon: '/img/logo/logo.png',
   },
+
   openGraph: {
     title: 'КиноТерапия',
     description:
@@ -38,8 +47,16 @@ export const metadata = {
     siteName: 'КиноТерапия',
     locale: 'ru_RU',
     type: 'website',
-    images: [{ url: '/img/logo/logo.png', width: 512, height: 512, alt: 'КиноТерапия' }],
+    images: [
+      {
+        url: '/img/logo/logo.png',
+        width: 512,
+        height: 512,
+        alt: 'КиноТерапия',
+      },
+    ],
   },
+
   twitter: {
     card: 'summary_large_image',
     title: 'КиноТерапия',
@@ -47,6 +64,7 @@ export const metadata = {
       'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
     images: ['/img/logo/logo.png'],
   },
+
   robots: {
     index: true,
     follow: true,
