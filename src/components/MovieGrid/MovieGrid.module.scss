@@ -1,0 +1,92 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  min-width: 0;
+  color: #fff;
+  text-decoration: none;
+}
+
+.cardContent {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.poster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 0.67;
+  overflow: hidden;
+  background: #0d1b2b;
+  border: 1px solid #18324b;
+  border-radius: 10px;
+}
+
+.posterImage {
+  object-fit: cover;
+}
+
+.cardDetails {
+  min-width: 0;
+}
+
+.title {
+  margin-bottom: 6px;
+  color: #dce7f3;
+  font-size: 14px;
+}
+
+.info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  color: #718298;
+  font-size: 11px;
+}
+
+.rating {
+  flex: 0 0 auto;
+  color: #cbd6e2;
+  white-space: nowrap;
+}
+
+.emptyState {
+  padding: 28px;
+  border: 1px solid #18324b;
+  border-radius: 16px;
+  background: #0a1727;
+  color: #dfeaf8;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+
+  .title {
+    overflow: hidden;
+    line-height: 1.35;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
