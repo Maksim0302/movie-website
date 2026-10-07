@@ -1,7 +1,9 @@
 import Image from 'next/image'
+import { notFound } from 'next/navigation'
 
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer'
 import { getMovieBySlug } from '@/lib/movies'
+import { getAbsoluteUrl } from '@/lib/site'
 import { getImageUrl } from '@/lib/tmdb'
 import styles from './MovieDetailPage.module.scss'
 
@@ -12,18 +14,36 @@ export async function generateMetadata({ params }) {
   if (!movie) {
     return {
       title: 'Фильм не найден',
+      description: 'Такого фильма нет в каталоге КиноТерапии.',
+      robots: {
+        index: false,
+        follow: false,
+      },
     }
   }
 
+  const description =
+    movie.overview || 'Просмотр фильма из каталога КиноТерапии.'
+  const imageUrl = movie.backdrop || getImageUrl(movie.poster_path)
+
   return {
-    title: `${movie.title} — КиноТерапия`,
-    description: movie.overview || 'Просмотр фильма из каталога КиноТерапия.',
+    title: `${movie.title} — смотреть фильм онлайн | КиноТерапия`,
+    description,
+    alternates: {
+      canonical: `/movies/${movie.slug}`,
+    },
     openGraph: {
       title: `${movie.title} — КиноТерапия`,
-      description: movie.overview || 'Просмотр фильма из каталога КиноТерапия.',
-      images: movie.backdrop
-        ? [movie.backdrop]
-        : [getImageUrl(movie.poster_path)],
+      description,
+      url: `/movies/${movie.slug}`,
+      type: 'video.movie',
+      images: [{ url: imageUrl, alt: movie.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${movie.title} — КиноТерапия`,
+      description,
+      images: [imageUrl],
     },
   }
 }
@@ -36,11 +56,7 @@ export default async function MovieDetailPage({ params }) {
   })
 
   if (!movie) {
-    return (
-      <section className={`container ${styles.messageSection}`}>
-        <div className={styles.message}>Не удалось загрузить фильм.</div>
-      </section>
-    )
+    notFound()
   }
 
   const releaseYear = movie.release_date
@@ -49,9 +65,27 @@ export default async function MovieDetailPage({ params }) {
   const runtime = movie.runtime
     ? `${Math.floor(movie.runtime / 60)}ч ${movie.runtime % 60}мин`
     : '—'
+  const imageUrl = movie.backdrop || getImageUrl(movie.poster_path)
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Movie',
+    name: movie.title,
+    image: imageUrl,
+    description: movie.overview || 'Описание фильма отсутствует.',
+    url: getAbsoluteUrl(`/movies/${movie.slug}`),
+    ...(movie.release_date
+      ? { datePublished: movie.release_date }
+      : {}),
+    genre: movie.genres || [],
+  }
 
   return (
     <section className={styles.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
       <div className={styles.hero}>
         <Image
           src={movie.backdrop || getImageUrl(movie.poster_path, 'w1280')}
@@ -59,7 +93,7 @@ export default async function MovieDetailPage({ params }) {
           fill
           priority
           className={styles.heroImage}
-          sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 180px"
+          sizes="100vw"
         />
 
         <div className={styles.heroOverlay} />
@@ -72,7 +106,7 @@ export default async function MovieDetailPage({ params }) {
                 alt={movie.title}
                 fill
                 className={styles.posterImage}
-                sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 180px"
+                sizes="(max-width: 480px) 40vw, (max-width: 768px) 30vw, 240px"
               />
             </div>
 

@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.scss'
 import Header from '@/components/Header/Header'
 import Footer from '@/components/Footer/Footer'
+import { getSiteUrl } from '@/lib/site'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -13,11 +14,42 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
+const siteUrl = getSiteUrl()
+
 export const metadata = {
-  title: 'КиноТерапия',
-  description: 'Каталог фильмов и сериалов в стильном тёмном дизайне.',
+  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
+  title: {
+    default: 'КиноТерапия',
+    template: '%s | КиноТерапия',
+  },
+  description:
+    'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
+  alternates: {
+    canonical: '/',
+  },
   icons: {
-    icon: '/public/img/favicon.png',
+    icon: '/img/logo/logo.png',
+  },
+  openGraph: {
+    title: 'КиноТерапия',
+    description:
+      'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
+    url: '/',
+    siteName: 'КиноТерапия',
+    locale: 'ru_RU',
+    type: 'website',
+    images: [{ url: '/img/logo/logo.png', width: 512, height: 512, alt: 'КиноТерапия' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'КиноТерапия',
+    description:
+      'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
+    images: ['/img/logo/logo.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 }
 

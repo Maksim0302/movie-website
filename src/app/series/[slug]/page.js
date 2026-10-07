@@ -1,7 +1,9 @@
 import Image from 'next/image'
+import { notFound } from 'next/navigation'
 
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer'
 import { getSeriesBySlug } from '@/lib/series'
+import { getAbsoluteUrl } from '@/lib/site'
 import { getImageUrl } from '@/lib/tmdb'
 import styles from './SeriesDetailPage.module.scss'
 
@@ -10,19 +12,38 @@ export async function generateMetadata({ params }) {
   const series = await getSeriesBySlug(slug)
 
   if (!series) {
-    return { title: 'Сериал не найден' }
+    return {
+      title: 'Сериал не найден',
+      description: 'Такого сериала нет в каталоге КиноТерапии.',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
   }
 
+  const description =
+    series.overview || 'Просмотр сериала из каталога КиноТерапии.'
+  const imageUrl = series.backdrop || getImageUrl(series.poster_path)
+
   return {
-    title: `${series.title} — КиноТерапия`,
-    description: series.overview || 'Просмотр сериала из каталога КиноТерапии.',
+    title: `${series.title} — смотреть сериал онлайн | КиноТерапия`,
+    description,
+    alternates: {
+      canonical: `/series/${series.slug}`,
+    },
     openGraph: {
       title: `${series.title} — КиноТерапия`,
-      description:
-        series.overview || 'Просмотр сериала из каталога КиноТерапии.',
-      images: series.backdrop
-        ? [series.backdrop]
-        : [getImageUrl(series.poster_path)],
+      description,
+      url: `/series/${series.slug}`,
+      type: 'video.tv_show',
+      images: [{ url: imageUrl, alt: series.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${series.title} — КиноТерапия`,
+      description,
+      images: [imageUrl],
     },
   }
 }
@@ -32,19 +53,33 @@ export default async function SeriesDetailPage({ params }) {
   const series = await getSeriesBySlug(slug)
 
   if (!series) {
-    return (
-      <section className={`container ${styles.messageSection}`}>
-        <div className={styles.message}>Не удалось загрузить сериал.</div>
-      </section>
-    )
+    notFound()
   }
 
   const releaseYear = series.release_date
     ? new Date(series.release_date).getFullYear()
     : '—'
+  const imageUrl = series.backdrop || getImageUrl(series.poster_path)
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'TVSeries',
+    name: series.title,
+    image: imageUrl,
+    description: series.overview || 'Описание сериала отсутствует.',
+    url: getAbsoluteUrl(`/series/${series.slug}`),
+    ...(series.release_date
+      ? { datePublished: series.release_date }
+      : {}),
+    genre: series.genres || [],
+  }
 
   return (
     <section className={styles.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+
       <div className={styles.hero}>
         <Image
           src={series.backdrop || getImageUrl(series.poster_path, 'w1280')}
@@ -52,7 +87,7 @@ export default async function SeriesDetailPage({ params }) {
           fill
           priority
           className={styles.heroImage}
-          sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 180px"
+          sizes="100vw"
         />
 
         <div className={styles.heroOverlay} />
@@ -65,7 +100,7 @@ export default async function SeriesDetailPage({ params }) {
                 alt={series.title}
                 fill
                 className={styles.posterImage}
-                sizes="(max-width: 480px) 45vw, (max-width: 768px) 30vw, 180px"
+                sizes="(max-width: 480px) 40vw, (max-width: 768px) 30vw, 240px"
               />
             </div>
 

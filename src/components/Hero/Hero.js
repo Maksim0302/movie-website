@@ -54,6 +54,7 @@ export default function Hero({ movies = [] }) {
           fill
           priority
           className={styles.background}
+          sizes="100vw"
         />
 
         <div className={styles.overlay}></div>
