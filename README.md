@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS public.movies (
   tmdb_id INTEGER NOT NULL UNIQUE,
   slug TEXT NOT NULL UNIQUE,
   video_id TEXT NULL,
+  availability_status TEXT NOT NULL DEFAULT 'full_movie'
+    CHECK (availability_status IN ('full_movie', 'trailer_only')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -89,7 +91,10 @@ CLOUDFLARE_API_TOKEN=
    полные серии храните по внешней ссылке, а не загружайте в Stream.
 5. Для YouTube- и Telegram-ссылок сериалов выполните SQL из
    `supabase/series_external_urls.sql`.
-6. Для HLS используется URL вида:
+6. Для существующих таблиц фильмов выполните миграцию
+   `supabase/movie_availability_status.sql`. Статусы: `full_movie` и
+   `trailer_only`.
+7. Для HLS используется URL вида:
 
 ```text
 https://customer-<customer_code>.cloudflarestream.com/<video_id>/manifest/video.m3u8

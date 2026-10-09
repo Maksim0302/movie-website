@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
+import MovieAvailabilityBadge from '@/components/MovieAvailabilityBadge/MovieAvailabilityBadge'
 import { getImageUrl } from '@/lib/tmdb'
 import styles from './MovieGrid.module.scss'
 
@@ -31,6 +32,10 @@ export default function MovieGrid({
                 className={styles.posterImage}
               />
             </div>
+
+            {hrefPrefix === 'movies' ? (
+              <MovieAvailabilityBadge status={movie.availability_status} />
+            ) : null}
 
             <div className={styles.cardDetails}>
               <h2 className={styles.title}>{movie.title}</h2>

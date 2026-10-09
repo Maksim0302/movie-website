@@ -1,0 +1,21 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 7px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.full_movie {
+  background: #21834b;
+}
+
+.trailer_only {
+  background: #c76a19;
+}

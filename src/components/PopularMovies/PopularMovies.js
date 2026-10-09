@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
+import MovieAvailabilityBadge from '@/components/MovieAvailabilityBadge/MovieAvailabilityBadge'
 import styles from './PopularMovies.module.scss'
 
 import { getImageUrl } from '@/lib/tmdb'
@@ -49,6 +50,10 @@ export default function PopularMovies({ movies = [] }) {
                   fill
                   sizes="(max-width: 768px) 140px, 180px"
                 />
+              </div>
+
+              <div className={styles.availability}>
+                <MovieAvailabilityBadge status={movie.availability_status} />
               </div>
 
               <h3 className={styles.name}>{movie.title}</h3>

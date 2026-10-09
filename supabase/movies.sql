@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS public.movies (
   tmdb_id INTEGER NOT NULL UNIQUE,
   slug TEXT NOT NULL UNIQUE,
   video_id TEXT NULL,
+  availability_status TEXT NOT NULL DEFAULT 'full_movie'
+    CHECK (availability_status IN ('full_movie', 'trailer_only')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
