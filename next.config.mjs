@@ -1,9 +1,14 @@
-/** @type {import('next').NextConfig} */
+import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  outputFileTracingRoot: __dirname,
 
   reactCompiler: true,
+
   allowedDevOrigins: ['192.168.3.28'],
 
   images: {

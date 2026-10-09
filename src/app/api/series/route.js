@@ -7,6 +7,10 @@ function normalizeSlug(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+function normalizeOptionalUrl(value) {
+  return typeof value === 'string' ? value.trim() || null : null
+}
+
 async function parseBody(request) {
   const contentType = request.headers.get('content-type') || ''
 
@@ -65,6 +69,8 @@ export async function POST(request) {
       typeof body.videoId === 'string'
         ? body.videoId.trim()
         : String(body.videoId || '').trim()
+    const youtubeUrl = normalizeOptionalUrl(body.youtubeUrl)
+    const telegramUrl = normalizeOptionalUrl(body.telegramUrl)
 
     if (!Number.isFinite(tmdbId) || tmdbId <= 0) {
       return NextResponse.json(
@@ -134,6 +140,8 @@ export async function POST(request) {
         tmdb_id: tmdbId,
         slug,
         video_id: videoId,
+        youtube_url: youtubeUrl,
+        telegram_url: telegramUrl,
       })
       .select()
       .single()
@@ -155,6 +163,164 @@ export async function POST(request) {
       {
         error:
           error instanceof Error ? error.message : 'Не удалось добавить сериал.',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const body = await parseBody(request)
+    const id = Number(body.id)
+    const tmdbId = Number(body.tmdbId)
+    const slug = normalizeSlug(String(body.slug || ''))
+    const videoId =
+      typeof body.videoId === 'string'
+        ? body.videoId.trim()
+        : String(body.videoId || '').trim()
+    const youtubeUrl = normalizeOptionalUrl(body.youtubeUrl)
+    const telegramUrl = normalizeOptionalUrl(body.telegramUrl)
+
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json(
+        { error: 'Не указан сериал для редактирования.' },
+        { status: 400 }
+      )
+    }
+
+    if (!Number.isFinite(tmdbId) || tmdbId <= 0) {
+      return NextResponse.json(
+        { error: 'TMDB ID обязателен и должен быть положительным числом.' },
+        { status: 400 }
+      )
+    }
+
+    if (!slug) {
+      return NextResponse.json({ error: 'Slug обязателен.' }, { status: 400 })
+    }
+
+    if (!videoId) {
+      return NextResponse.json(
+        { error: 'Cloudflare Video ID обязателен.' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = getSupabaseServerClient()
+
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Supabase не настроен. Проверьте переменные окружения.' },
+        { status: 500 }
+      )
+    }
+
+    const { data: existingSeries, error: existingSeriesError } = await supabase
+      .from('series')
+      .select('id')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (existingSeriesError) {
+      return NextResponse.json(
+        { error: existingSeriesError.message },
+        { status: 500 }
+      )
+    }
+
+    if (!existingSeries) {
+      return NextResponse.json(
+        { error: 'Сериал для редактирования не найден.' },
+        { status: 404 }
+      )
+    }
+
+    const { data: conflictingTmdbSeries, error: tmdbConflictError } =
+      await supabase
+        .from('series')
+        .select('id')
+        .eq('tmdb_id', tmdbId)
+        .neq('id', id)
+        .maybeSingle()
+
+    if (tmdbConflictError) {
+      return NextResponse.json(
+        { error: tmdbConflictError.message },
+        { status: 500 }
+      )
+    }
+
+    if (conflictingTmdbSeries) {
+      return NextResponse.json(
+        { error: 'Сериал с таким TMDB ID уже существует.' },
+        { status: 409 }
+      )
+    }
+
+    const { data: conflictingSlugSeries, error: slugConflictError } =
+      await supabase
+        .from('series')
+        .select('id')
+        .eq('slug', slug)
+        .neq('id', id)
+        .maybeSingle()
+
+    if (slugConflictError) {
+      return NextResponse.json(
+        { error: slugConflictError.message },
+        { status: 500 }
+      )
+    }
+
+    if (conflictingSlugSeries) {
+      return NextResponse.json(
+        { error: 'Сериал с таким slug уже существует.' },
+        { status: 409 }
+      )
+    }
+
+    const metadata = await getSeriesByTmdbId(tmdbId)
+
+    if (!metadata) {
+      return NextResponse.json(
+        { error: 'Сериал с таким TMDB ID не найден.' },
+        { status: 404 }
+      )
+    }
+
+    const { data, error } = await supabase
+      .from('series')
+      .update({
+        tmdb_id: tmdbId,
+        slug,
+        video_id: videoId,
+        youtube_url: youtubeUrl,
+        telegram_url: telegramUrl,
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message || 'Не удалось обновить сериал.' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      message: 'Сериал успешно обновлён.',
+      series: data,
+      metadata,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Не удалось обновить сериал.',
       },
       { status: 500 }
     )

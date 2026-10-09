@@ -111,19 +111,38 @@
 
 .watchButton {
   display: inline-flex;
+  gap: 9px;
   align-items: center;
   justify-content: center;
   min-height: 46px;
-  padding: 0 20px;
+  padding: 0 16px;
   border-radius: 10px;
-  background: #087ef5;
   color: #fff;
   font-weight: 700;
-  transition: background-color 160ms ease;
+  text-align: center;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
-.watchButton:hover {
-  background: #1590ff;
+.youtubeButton {
+  border: 1px solid #f04444;
+  background: #bd2525;
+}
+
+.youtubeButton:hover {
+  border-color: #ff6262;
+  background: #d92e2e;
+}
+
+.telegramButton {
+  border: 1px solid #278ccd;
+  background: #147bb6;
+}
+
+.telegramButton:hover {
+  border-color: #55b6f2;
+  background: #168fcf;
 }
 
 .playerSection {
@@ -279,6 +298,11 @@
   .overview {
     margin-bottom: 18px;
     font-size: 14px;
+  }
+
+  .actions,
+  .watchButton {
+    width: 100%;
   }
 
   .message {

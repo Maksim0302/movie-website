@@ -134,11 +134,30 @@ export default async function SeriesDetailPage({ params }) {
 
               <p className={styles.overview}>{series.overview}</p>
 
-              {series.videoUrl ? (
+              {series.youtube_url || series.telegram_url ? (
                 <div className={styles.actions}>
-                  <a href="#player" className={styles.watchButton}>
-                    Смотреть
-                  </a>
+                  {series.youtube_url ? (
+                    <a
+                      href={series.youtube_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${styles.watchButton} ${styles.youtubeButton}`}
+                    >
+                      <span aria-hidden="true">▶</span>
+                      Смотреть сериал на YouTube
+                    </a>
+                  ) : null}
+                  {series.telegram_url ? (
+                    <a
+                      href={series.telegram_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${styles.watchButton} ${styles.telegramButton}`}
+                    >
+                      <span aria-hidden="true">✈</span>
+                      Смотреть сериал в Telegram
+                    </a>
+                  ) : null}
                 </div>
               ) : null}
             </div>

@@ -85,7 +85,11 @@ CLOUDFLARE_API_TOKEN=
 2. Получите `video_id` видеозаписи.
 3. Сохраните его в поле `video_id` в таблице `movies`.
 4. Для сериалов используйте отдельную таблицу `series` с теми же полями.
-5. Для HLS используется URL вида:
+   Cloudflare Stream в таблице сериалов используется только для трейлеров;
+   полные серии храните по внешней ссылке, а не загружайте в Stream.
+5. Для YouTube- и Telegram-ссылок сериалов выполните SQL из
+   `supabase/series_external_urls.sql`.
+6. Для HLS используется URL вида:
 
 ```text
 https://customer-<customer_code>.cloudflarestream.com/<video_id>/manifest/video.m3u8
@@ -113,7 +117,8 @@ npm run dev
 
 - Список фильмов формируется только из таблицы `public.movies`.
 - Список сериалов формируется только из таблицы `public.series`.
-- Для добавления сериала в `/admin/series` нужны TMDB ID, slug и Cloudflare Video ID.
+- Для добавления сериала в `/admin/series` нужны TMDB ID, slug и Cloudflare Video ID;
+  YouTube URL и Telegram URL необязательны.
 - TMDB используется только для получения метаданных по `tmdb_id`.
 - Видеофайлы не хранятся в репозитории.
 - Секретные ключи не попадают в клиентский JavaScript.

@@ -1,0 +1,3 @@
+ALTER TABLE public.series
+  ADD COLUMN IF NOT EXISTS youtube_url TEXT NULL,
+  ADD COLUMN IF NOT EXISTS telegram_url TEXT NULL;

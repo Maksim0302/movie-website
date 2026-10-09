@@ -5,7 +5,15 @@ import { useEffect, useState } from 'react'
 
 export default function AdminSeriesPage() {
   const [series, setSeries] = useState([])
-  const [form, setForm] = useState({ tmdbId: '', slug: '', videoId: '' })
+  const emptyForm = {
+    id: null,
+    tmdbId: '',
+    slug: '',
+    videoId: '',
+    youtubeUrl: '',
+    telegramUrl: '',
+  }
+  const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -35,12 +43,15 @@ export default function AdminSeriesPage() {
 
     try {
       const response = await fetch('/api/series', {
-        method: 'POST',
+        method: form.id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: form.id,
           tmdbId: Number(form.tmdbId),
           slug: form.slug,
           videoId: form.videoId,
+          youtubeUrl: form.youtubeUrl,
+          telegramUrl: form.telegramUrl,
         }),
       })
       const data = await response.json()
@@ -49,12 +60,25 @@ export default function AdminSeriesPage() {
         throw new Error(data.error || 'Не удалось добавить сериал.')
       }
 
-      setSuccess('Сериал успешно добавлен.')
-      setForm({ tmdbId: '', slug: '', videoId: '' })
+      setSuccess(form.id ? 'Сериал успешно обновлён.' : 'Сериал успешно добавлен.')
+      setForm(emptyForm)
       await loadSeries()
     } catch (submitError) {
       setError(submitError.message)
     }
+  }
+
+  function handleEdit(seriesItem) {
+    setError('')
+    setSuccess('')
+    setForm({
+      id: seriesItem.id,
+      tmdbId: String(seriesItem.tmdb_id || ''),
+      slug: seriesItem.slug || '',
+      videoId: seriesItem.video_id || '',
+      youtubeUrl: seriesItem.youtube_url || '',
+      telegramUrl: seriesItem.telegram_url || '',
+    })
   }
 
   async function handleDelete(slug) {
@@ -106,6 +130,8 @@ export default function AdminSeriesPage() {
           { name: 'tmdbId', label: 'TMDB ID', type: 'number' },
           { name: 'slug', label: 'Slug', type: 'text' },
           { name: 'videoId', label: 'Cloudflare Video ID', type: 'text' },
+          { name: 'youtubeUrl', label: 'YouTube URL', type: 'url' },
+          { name: 'telegramUrl', label: 'Telegram URL', type: 'url' },
         ].map((field) => (
           <label
             key={field.name}
@@ -115,7 +141,7 @@ export default function AdminSeriesPage() {
             <input
               name={field.name}
               type={field.type}
-              required
+              required={!['youtubeUrl', 'telegramUrl'].includes(field.name)}
               value={form[field.name]}
               onChange={(event) =>
                 setForm((current) => ({
@@ -134,20 +160,39 @@ export default function AdminSeriesPage() {
           </label>
         ))}
 
-        <button
-          type="submit"
-          style={{
-            padding: '12px 18px',
-            borderRadius: 10,
-            background: '#087ef5',
-            color: '#fff',
-            border: '1px solid #1689ff',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          Добавить сериал
-        </button>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          <button
+            type="submit"
+            style={{
+              padding: '12px 18px',
+              borderRadius: 10,
+              background: '#087ef5',
+              color: '#fff',
+              border: '1px solid #1689ff',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            {form.id ? 'Сохранить изменения' : 'Добавить сериал'}
+          </button>
+          {form.id ? (
+            <button
+              type="button"
+              onClick={() => setForm(emptyForm)}
+              style={{
+                padding: '12px 18px',
+                borderRadius: 10,
+                background: '#0d1d2d',
+                color: '#dfeaf8',
+                border: '1px solid #1b3b5d',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Отмена
+            </button>
+          ) : null}
+        </div>
       </form>
 
       {error ? (
@@ -187,6 +232,10 @@ export default function AdminSeriesPage() {
                     TMDB ID: {seriesItem.tmdb_id} • Video ID:{' '}
                     {seriesItem.video_id || '—'}
                   </p>
+                  <p style={{ color: '#a9b7c7', fontSize: 14 }}>
+                    YouTube: {seriesItem.youtube_url || '—'} • Telegram:{' '}
+                    {seriesItem.telegram_url || '—'}
+                  </p>
                   <Link
                     href={`/series/${seriesItem.slug}`}
                     style={{ color: '#5ca8ff', fontSize: 14 }}
@@ -195,21 +244,38 @@ export default function AdminSeriesPage() {
                   </Link>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleDelete(seriesItem.slug)}
-                  style={{
-                    padding: '10px 14px',
-                    minHeight: 44,
-                    borderRadius: 8,
-                    border: '1px solid #7a2a2a',
-                    background: '#1d0f12',
-                    color: '#f9b5bb',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Удалить
-                </button>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(seriesItem)}
+                    style={{
+                      padding: '10px 14px',
+                      minHeight: 44,
+                      borderRadius: 8,
+                      border: '1px solid #1b5b91',
+                      background: '#0d1d2d',
+                      color: '#a9d5ff',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Изменить
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(seriesItem.slug)}
+                    style={{
+                      padding: '10px 14px',
+                      minHeight: 44,
+                      borderRadius: 8,
+                      border: '1px solid #7a2a2a',
+                      background: '#1d0f12',
+                      color: '#f9b5bb',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Удалить
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

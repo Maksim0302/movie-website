@@ -33,7 +33,9 @@ export async function getSeries() {
   try {
     const { data, error } = await supabase
       .from('series')
-      .select('*')
+      .select(
+        'id, tmdb_id, slug, video_id, youtube_url, telegram_url, created_at'
+      )
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -66,7 +68,9 @@ export async function getSeriesBySlug(slug) {
   try {
     const { data, error } = await supabase
       .from('series')
-      .select('*')
+      .select(
+        'id, tmdb_id, slug, video_id, youtube_url, telegram_url, created_at'
+      )
       .eq('slug', slug)
       .maybeSingle()
 
