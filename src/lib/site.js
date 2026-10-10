@@ -1,23 +1,15 @@
+const DEFAULT_SITE_URL = 'https://kinoterapiya.vercel.app'
+
 export function getSiteUrl() {
   const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL
 
-  if (!configuredUrl) {
-    return undefined
-  }
-
   try {
-    return new URL(configuredUrl).origin
+    return new URL(configuredUrl || DEFAULT_SITE_URL).origin
   } catch {
-    return undefined
+    return DEFAULT_SITE_URL
   }
 }
 
 export function getAbsoluteUrl(pathname = '/') {
-  const siteUrl = getSiteUrl()
-
-  if (!siteUrl) {
-    return pathname
-  }
-
-  return new URL(pathname, siteUrl).toString()
+  return new URL(pathname, getSiteUrl()).toString()
 }
