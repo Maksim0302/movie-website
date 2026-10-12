@@ -26,6 +26,7 @@ export default function MovieCatalog({
   movies = [],
   initialPage = 1,
   searchQuery = '',
+  emptyMessage = 'В каталоге пока нет фильмов.',
 }) {
   const totalPages = Math.ceil(movies.length / PAGE_SIZE)
   const [currentPage, setCurrentPage] = useState(() =>
@@ -133,7 +134,7 @@ export default function MovieCatalog({
             <p>По вашему запросу ничего не найдено</p>
           </div>
         ) : (
-          <MovieGrid movies={visibleMovies} />
+          <MovieGrid movies={visibleMovies} emptyMessage={emptyMessage} />
         )}
       </div>
 

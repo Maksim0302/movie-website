@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 
-import MovieGrid from '@/components/MovieGrid/MovieGrid'
+import MovieCatalog from '@/components/MovieCatalog/MovieCatalog'
 import { getGenreBySlug } from '@/lib/genres'
 import { getMoviesByGenre } from '@/lib/movies'
 import { getAbsoluteUrl } from '@/lib/site'
@@ -44,8 +44,9 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default async function GenrePage({ params }) {
+export default async function GenrePage({ params, searchParams }) {
   const { slug } = await params
+  const { page: requestedPage } = await searchParams
   const genre = getGenreBySlug(slug)
 
   if (!genre) {
@@ -53,6 +54,9 @@ export default async function GenrePage({ params }) {
   }
 
   const movies = await getMoviesByGenre(genre.id)
+  const parsedPage = Number.parseInt(requestedPage, 10)
+  const initialPage =
+    Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
 
   return (
     <section
@@ -72,8 +76,9 @@ export default async function GenrePage({ params }) {
         </h1>
       </div>
 
-      <MovieGrid
+      <MovieCatalog
         movies={movies}
+        initialPage={initialPage}
         emptyMessage="Фильмов в этом жанре пока нет."
       />
     </section>
