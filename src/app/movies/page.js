@@ -25,9 +25,28 @@ export const metadata = {
   },
 }
 
+function normalizeSearchText(value) {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase('ru-RU')
+}
+
 export default async function MoviesPage({ searchParams }) {
-  const { page: requestedPage } = await searchParams
-  const movies = await getMovies().catch(() => [])
+  const { page: requestedPage, search: requestedSearch } = await searchParams
+  const searchQuery =
+    typeof requestedSearch === 'string' ? requestedSearch.trim() : ''
+  const catalog = await getMovies().catch(() => [])
+  const normalizedQuery = normalizeSearchText(searchQuery)
+  const movies = normalizedQuery
+    ? catalog.filter((movie) =>
+        [movie.title, movie.original_title].some(
+          (title) =>
+            typeof title === 'string' &&
+            normalizeSearchText(title).includes(normalizedQuery)
+        )
+      )
+    : catalog
   const parsedPage = Number.parseInt(requestedPage, 10)
   const initialPage =
     Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
@@ -50,7 +69,11 @@ export default async function MoviesPage({ searchParams }) {
         </h1>
       </div>
 
-      <MovieCatalog movies={movies} initialPage={initialPage} />
+      <MovieCatalog
+        movies={movies}
+        initialPage={initialPage}
+        searchQuery={searchQuery}
+      />
     </section>
   )
 }

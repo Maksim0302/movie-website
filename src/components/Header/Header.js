@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import styles from './Header.module.scss'
 
 export default function Header() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -16,6 +17,22 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const searchContainerRef = useRef(null)
   const headerRef = useRef(null)
+
+  function submitMovieSearch(event) {
+    if (event.key !== 'Enter') {
+      return
+    }
+
+    event.preventDefault()
+    const query = searchQuery.trim()
+
+    if (!query) {
+      return
+    }
+
+    closeSearch()
+    router.push(`/movies?search=${encodeURIComponent(query)}`)
+  }
 
   const closeSearch = useCallback(() => {
     setIsSearchOpen(false)
@@ -233,6 +250,7 @@ export default function Header() {
                     aria-label="Поиск фильмов и сериалов"
                     aria-controls="header-search-results"
                     value={searchQuery}
+                    onKeyDown={submitMovieSearch}
                     onChange={(event) => {
                       const nextQuery = event.target.value
                       setSearchQuery(nextQuery)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 
 import MovieGrid from '@/components/MovieGrid/MovieGrid'
 import styles from './MovieCatalog.module.scss'
@@ -21,13 +22,18 @@ function getPageNumbers(currentPage, totalPages) {
   return [...pages].sort((first, second) => first - second)
 }
 
-export default function MovieCatalog({ movies = [], initialPage = 1 }) {
+export default function MovieCatalog({
+  movies = [],
+  initialPage = 1,
+  searchQuery = '',
+}) {
   const totalPages = Math.ceil(movies.length / PAGE_SIZE)
   const [currentPage, setCurrentPage] = useState(() =>
     Math.min(Math.max(initialPage, 1), Math.max(totalPages, 1))
   )
   const listRef = useRef(null)
   const initialUrlSynced = useRef(false)
+  const previousSearchQuery = useRef(searchQuery)
   const visibleMovies = movies.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
@@ -70,6 +76,13 @@ export default function MovieCatalog({ movies = [], initialPage = 1 }) {
   }, [currentPage, setPageInUrl])
 
   useEffect(() => {
+    if (previousSearchQuery.current !== searchQuery) {
+      previousSearchQuery.current = searchQuery
+      setCurrentPage(1)
+    }
+  }, [searchQuery])
+
+  useEffect(() => {
     function handlePopState() {
       const urlPage = Number.parseInt(
         new URL(window.location.href).searchParams.get('page'),
@@ -103,8 +116,25 @@ export default function MovieCatalog({ movies = [], initialPage = 1 }) {
 
   return (
     <>
+      {searchQuery ? (
+        <div className={styles.searchSummary}>
+          <span>Результаты поиска: «{searchQuery}»</span>
+          <Link href="/movies" className={styles.clearSearch}>
+            Очистить поиск
+          </Link>
+        </div>
+      ) : null}
+
       <div ref={listRef}>
-        <MovieGrid movies={visibleMovies} />
+        {movies.length ? (
+          <MovieGrid movies={visibleMovies} />
+        ) : searchQuery ? (
+          <div className={styles.emptySearch}>
+            <p>По вашему запросу ничего не найдено</p>
+          </div>
+        ) : (
+          <MovieGrid movies={visibleMovies} />
+        )}
       </div>
 
       {totalPages > 1 ? (
