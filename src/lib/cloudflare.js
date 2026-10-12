@@ -3,6 +3,12 @@ export function getCloudflareHlsUrl(videoId) {
     return null
   }
 
+  const normalizedVideoId = videoId.trim().replace(/^customer-/, '')
+
+  if (!normalizedVideoId) {
+    return null
+  }
+
   const customerCode = String(process.env.CLOUDFLARE_STREAM_CUSTOMER_CODE || '')
     .trim()
     .replace(/^https?:\/\//, '')
@@ -12,10 +18,6 @@ export function getCloudflareHlsUrl(videoId) {
   if (!customerCode) {
     return null
   }
-
-  const normalizedVideoId = String(videoId)
-    .trim()
-    .replace(/^customer-/, '')
 
   return `https://customer-${customerCode}.cloudflarestream.com/${normalizedVideoId}/manifest/video.m3u8`
 }

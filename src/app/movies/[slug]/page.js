@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
-import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer'
+import MoviePlayback from '@/components/MoviePlayback/MoviePlayback'
 import { getMovieBySlug } from '@/lib/movies'
 import { getAbsoluteUrl } from '@/lib/site'
 import { getImageUrl } from '@/lib/tmdb'
@@ -133,11 +133,9 @@ export default async function MovieDetailPage({ params }) {
               <p className={styles.overview}>{movie.overview}</p>
 
               <div className={styles.actions}>
-                {movie.videoUrl ? (
-                  <a href="#player" className={styles.watchButton}>
-                    Смотреть
-                  </a>
-                ) : null}
+                <a href="#player" className={styles.watchButton}>
+                  Перейти к просмотру
+                </a>
               </div>
             </div>
           </div>
@@ -146,7 +144,12 @@ export default async function MovieDetailPage({ params }) {
 
       <div className={`container ${styles.playerSection}`}>
         <div id="player" className={styles.playerContainer}>
-          <VideoPlayer src={movie.videoUrl || null} />
+          <MoviePlayback
+            movieTitle={movie.title}
+            videoUrl={movie.videoUrl}
+            trailerVideoId={movie.trailer_video_id}
+            trailerVideoUrl={movie.trailerVideoUrl}
+          />
         </div>
       </div>
     </section>

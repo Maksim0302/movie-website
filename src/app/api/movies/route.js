@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server'
 
+import { getMovieAvailabilityStatus } from '@/lib/movie-availability'
 import { getMovie } from '@/lib/tmdb'
 import { getSupabaseServerClient } from '@/lib/supabase'
 
 function normalizeSlug(value) {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function normalizeVideoId(value) {
+  return typeof value === 'string' ? value.trim() || null : null
 }
 
 async function parseBody(request) {
@@ -47,7 +52,12 @@ export async function GET() {
     )
   }
 
-  return NextResponse.json(data || [])
+  return NextResponse.json(
+    (data || []).map((movie) => ({
+      ...movie,
+      availability_status: getMovieAvailabilityStatus(movie),
+    }))
+  )
 }
 
 export async function POST(request) {
@@ -61,10 +71,8 @@ export async function POST(request) {
 
     const tmdbId = Number(body.tmdbId)
     const slug = normalizeSlug(String(body.slug || ''))
-    const videoId =
-      typeof body.videoId === 'string'
-        ? body.videoId.trim()
-        : String(body.videoId || '').trim()
+    const videoId = normalizeVideoId(body.videoId)
+    const trailerVideoId = normalizeVideoId(body.trailerVideoId)
 
     if (!Number.isFinite(tmdbId) || tmdbId <= 0) {
       return NextResponse.json(
@@ -75,13 +83,6 @@ export async function POST(request) {
 
     if (!slug) {
       return NextResponse.json({ error: 'Slug обязателен.' }, { status: 400 })
-    }
-
-    if (!videoId) {
-      return NextResponse.json(
-        { error: 'Cloudflare Video ID обязателен.' },
-        { status: 400 }
-      )
     }
 
     const supabase = getSupabaseServerClient()
@@ -134,6 +135,11 @@ export async function POST(request) {
         tmdb_id: tmdbId,
         slug,
         video_id: videoId,
+        trailer_video_id: trailerVideoId,
+        availability_status: getMovieAvailabilityStatus({
+          video_id: videoId,
+          trailer_video_id: trailerVideoId,
+        }),
       })
       .select()
       .single()
@@ -155,6 +161,71 @@ export async function POST(request) {
       {
         error:
           error instanceof Error ? error.message : 'Не удалось добавить фильм.',
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const body = await parseBody(request)
+    const id = Number(body.id)
+    const videoId = normalizeVideoId(body.videoId)
+    const trailerVideoId = normalizeVideoId(body.trailerVideoId)
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json(
+        { error: 'Не указан корректный ID фильма.' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = getSupabaseServerClient()
+
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Supabase не настроен. Проверьте переменные окружения.' },
+        { status: 500 }
+      )
+    }
+
+    const { data, error } = await supabase
+      .from('movies')
+      .update({
+        video_id: videoId,
+        trailer_video_id: trailerVideoId,
+        availability_status: getMovieAvailabilityStatus({
+          video_id: videoId,
+          trailer_video_id: trailerVideoId,
+        }),
+      })
+      .eq('id', id)
+      .select()
+      .maybeSingle()
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message || 'Не удалось обновить фильм.' },
+        { status: 500 }
+      )
+    }
+
+    if (!data) {
+      return NextResponse.json(
+        { error: 'Фильм не найден.' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ message: 'Данные фильма обновлены.', movie: data })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Не удалось обновить фильм.',
       },
       { status: 500 }
     )

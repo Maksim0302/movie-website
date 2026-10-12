@@ -21,15 +21,15 @@ function isSafariOrIosBrowser() {
   return isIosDevice || isIpadOs || isSafari
 }
 
-export default function VideoPlayer({ src }) {
+export default function VideoPlayer({ src, title }) {
   if (!src) {
     return <div className={styles.empty}>Видео пока недоступно</div>
   }
 
-  return <HlsVideo key={src} src={src} />
+  return <HlsVideo key={src} src={src} title={title} />
 }
 
-function HlsVideo({ src }) {
+function HlsVideo({ src, title }) {
   const videoRef = useRef(null)
   const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -150,6 +150,9 @@ function HlsVideo({ src }) {
       return () => {
         destroyed = true
         hls.destroy()
+        video.pause()
+        video.removeAttribute('src')
+        video.load()
       }
     }
 
@@ -176,6 +179,7 @@ function HlsVideo({ src }) {
       <video
         ref={videoRef}
         className={styles.player}
+        title={title}
         controls
         playsInline
         preload="metadata"

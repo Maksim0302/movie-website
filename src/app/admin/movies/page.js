@@ -5,7 +5,13 @@ import { useEffect, useState } from 'react'
 
 export default function AdminMoviesPage() {
   const [movies, setMovies] = useState([])
-  const [form, setForm] = useState({ tmdbId: '', slug: '', videoId: '' })
+  const [form, setForm] = useState({
+    tmdbId: '',
+    slug: '',
+    videoId: '',
+    trailerVideoId: '',
+  })
+  const [editingMovieId, setEditingMovieId] = useState(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -35,12 +41,14 @@ export default function AdminMoviesPage() {
 
     try {
       const response = await fetch('/api/movies', {
-        method: 'POST',
+        method: editingMovieId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tmdbId: Number(form.tmdbId),
-          slug: form.slug,
+          ...(editingMovieId
+            ? { id: editingMovieId }
+            : { tmdbId: Number(form.tmdbId), slug: form.slug }),
           videoId: form.videoId,
+          trailerVideoId: form.trailerVideoId,
         }),
       })
 
@@ -50,12 +58,37 @@ export default function AdminMoviesPage() {
         throw new Error(data.error || 'Не удалось добавить фильм.')
       }
 
-      setSuccess('Фильм успешно добавлен.')
-      setForm({ tmdbId: '', slug: '', videoId: '' })
+      setSuccess(
+        editingMovieId
+          ? 'Данные фильма обновлены.'
+          : 'Фильм успешно добавлен.'
+      )
+      setForm({ tmdbId: '', slug: '', videoId: '', trailerVideoId: '' })
+      setEditingMovieId(null)
       await loadMovies()
     } catch (submitError) {
       setError(submitError.message)
     }
+  }
+
+  function handleEdit(movie) {
+    setEditingMovieId(movie.id)
+    setForm({
+      tmdbId: '',
+      slug: movie.slug || '',
+      videoId: movie.video_id || '',
+      trailerVideoId: movie.trailer_video_id || '',
+    })
+    setError('')
+    setSuccess('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function cancelEdit() {
+    setEditingMovieId(null)
+    setForm({ tmdbId: '', slug: '', videoId: '', trailerVideoId: '' })
+    setError('')
+    setSuccess('')
   }
 
   async function handleDelete(slug) {
@@ -109,7 +142,8 @@ export default function AdminMoviesPage() {
           <input
             name="tmdbId"
             type="number"
-            required
+            required={!editingMovieId}
+            disabled={Boolean(editingMovieId)}
             value={form.tmdbId}
             onChange={(event) =>
               setForm((current) => ({ ...current, tmdbId: event.target.value }))
@@ -129,7 +163,8 @@ export default function AdminMoviesPage() {
           <input
             name="slug"
             type="text"
-            required
+            required={!editingMovieId}
+            disabled={Boolean(editingMovieId)}
             value={form.slug}
             onChange={(event) =>
               setForm((current) => ({ ...current, slug: event.target.value }))
@@ -145,16 +180,37 @@ export default function AdminMoviesPage() {
         </label>
 
         <label style={{ display: 'grid', gap: 8, color: '#dfeaf8' }}>
-          <span>Cloudflare Video ID</span>
+          <span>Идентификатор полной версии фильма (video_id)</span>
           <input
             name="videoId"
             type="text"
-            required
             value={form.videoId}
             onChange={(event) =>
               setForm((current) => ({
                 ...current,
                 videoId: event.target.value,
+              }))
+            }
+            style={{
+              padding: '12px 14px',
+              borderRadius: 10,
+              border: '1px solid #1b3b5d',
+              background: '#0d1d2d',
+              color: '#fff',
+            }}
+          />
+        </label>
+
+        <label style={{ display: 'grid', gap: 8, color: '#dfeaf8' }}>
+          <span>Идентификатор трейлера (trailer_video_id)</span>
+          <input
+            name="trailerVideoId"
+            type="text"
+            value={form.trailerVideoId}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                trailerVideoId: event.target.value,
               }))
             }
             style={{
@@ -179,8 +235,25 @@ export default function AdminMoviesPage() {
             cursor: 'pointer',
           }}
         >
-          Добавить фильм
+          {editingMovieId ? 'Сохранить изменения' : 'Добавить фильм'}
         </button>
+        {editingMovieId ? (
+          <button
+            type="button"
+            onClick={cancelEdit}
+            style={{
+              padding: '12px 18px',
+              borderRadius: 10,
+              background: '#0d1d2d',
+              color: '#dfeaf8',
+              border: '1px solid #1b3b5d',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Отменить редактирование
+          </button>
+        ) : null}
       </form>
 
       {error ? (
@@ -219,7 +292,9 @@ export default function AdminMoviesPage() {
                     {movie.title || movie.slug}
                   </p>
                   <p style={{ color: '#a9b7c7', fontSize: 14 }}>
-                    TMDB ID: {movie.tmdb_id} • Video ID: {movie.video_id || '—'}
+                    TMDB ID: {movie.tmdb_id} • Полный фильм:{' '}
+                    {movie.video_id || '—'} • Трейлер:{' '}
+                    {movie.trailer_video_id || '—'}
                   </p>
                   <Link
                     href={`/movies/${movie.slug}`}
@@ -228,6 +303,22 @@ export default function AdminMoviesPage() {
                     /movies/{movie.slug}
                   </Link>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleEdit(movie)}
+                  style={{
+                    padding: '10px 14px',
+                    minHeight: 44,
+                    borderRadius: 8,
+                    border: '1px solid #1b3b5d',
+                    background: '#0d1d2d',
+                    color: '#dfeaf8',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Изменить видео
+                </button>
 
                 <button
                   type="button"

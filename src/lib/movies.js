@@ -1,4 +1,5 @@
 import { getCloudflareHlsUrl } from './cloudflare'
+import { getMovieAvailabilityStatus } from './movie-availability'
 import { getSupabaseServerClient } from './supabase'
 import { getImageUrl, getMovie } from './tmdb'
 
@@ -87,9 +88,11 @@ export async function getMoviesByGenre(genreId) {
           return {
             ...movie,
             ...metadata,
+            availability_status: getMovieAvailabilityStatus(movie),
             poster: getImageUrl(metadata.poster_path),
             backdrop: getImageUrl(metadata.backdrop_path, 'w1280'),
             videoUrl: getCloudflareHlsUrl(movie.video_id),
+            trailerVideoUrl: getCloudflareHlsUrl(movie.trailer_video_id),
           }
         } catch (movieError) {
           console.error('Failed to hydrate movie by genre:', movieError)
@@ -135,9 +138,11 @@ export async function getMovies() {
           return {
             ...movie,
             ...metadata,
+            availability_status: getMovieAvailabilityStatus(movie),
             poster: getImageUrl(metadata.poster_path),
             backdrop: getImageUrl(metadata.backdrop_path, 'w1280'),
             videoUrl: getCloudflareHlsUrl(movie.video_id),
+            trailerVideoUrl: getCloudflareHlsUrl(movie.trailer_video_id),
           }
         } catch (movieError) {
           console.error('Failed to hydrate movie:', movieError)
@@ -189,9 +194,11 @@ export async function getMovieBySlug(slug) {
     return {
       ...data,
       ...metadata,
+      availability_status: getMovieAvailabilityStatus(data),
       poster: getImageUrl(metadata.poster_path),
       backdrop: getImageUrl(metadata.backdrop_path, 'w1280'),
       videoUrl: getCloudflareHlsUrl(data.video_id),
+      trailerVideoUrl: getCloudflareHlsUrl(data.trailer_video_id),
     }
   } catch (error) {
     console.error('getMovieBySlug failed:', error)
