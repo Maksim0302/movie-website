@@ -1,5 +1,5 @@
 import { getMovies } from '@/lib/movies'
-import MovieGrid from '@/components/MovieGrid/MovieGrid'
+import MovieCatalog from '@/components/MovieCatalog/MovieCatalog'
 import { getAbsoluteUrl } from '@/lib/site'
 
 export const metadata = {
@@ -25,8 +25,12 @@ export const metadata = {
   },
 }
 
-export default async function MoviesPage() {
+export default async function MoviesPage({ searchParams }) {
+  const { page: requestedPage } = await searchParams
   const movies = await getMovies().catch(() => [])
+  const parsedPage = Number.parseInt(requestedPage, 10)
+  const initialPage =
+    Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
 
   return (
     <section
@@ -46,7 +50,7 @@ export default async function MoviesPage() {
         </h1>
       </div>
 
-      <MovieGrid movies={movies} />
+      <MovieCatalog movies={movies} initialPage={initialPage} />
     </section>
   )
 }
