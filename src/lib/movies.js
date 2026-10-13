@@ -8,23 +8,50 @@ const MOVIE_METADATA_CONCURRENCY = 8
 
 export function getPopularMovies(movies = [], limit = 3) {
   const requestedLimit = Number.isInteger(Number(limit)) ? Number(limit) : 3
-  const resultLimit = Math.min(3, Math.max(0, requestedLimit))
+  const resultLimit = Math.max(0, requestedLimit)
 
-  return [...movies]
+  return [...(Array.isArray(movies) ? movies : [])]
     .sort((first, second) => {
-      const ratingDifference =
-        Number(second.vote_average || 0) - Number(first.vote_average || 0)
+      const firstRating = getMovieRating(first)
+      const secondRating = getMovieRating(second)
 
-      if (ratingDifference !== 0) {
-        return ratingDifference
+      if (firstRating === null && secondRating !== null) {
+        return 1
       }
 
-      return (
-        new Date(second.created_at || 0).getTime() -
-        new Date(first.created_at || 0).getTime()
-      )
+      if (firstRating !== null && secondRating === null) {
+        return -1
+      }
+
+      if (firstRating !== null && secondRating !== null) {
+        const ratingDifference = secondRating - firstRating
+
+        if (ratingDifference !== 0) {
+          return ratingDifference
+        }
+      }
+
+      return getCreatedAtTimestamp(second) - getCreatedAtTimestamp(first)
     })
     .slice(0, resultLimit)
+}
+
+function getMovieRating(movie) {
+  if (
+    movie?.vote_average === null ||
+    movie?.vote_average === undefined ||
+    movie.vote_average === ''
+  ) {
+    return null
+  }
+
+  const rating = Number(movie.vote_average)
+  return Number.isFinite(rating) ? rating : null
+}
+
+function getCreatedAtTimestamp(movie) {
+  const timestamp = new Date(movie?.created_at || 0).getTime()
+  return Number.isFinite(timestamp) ? timestamp : 0
 }
 
 async function mapWithConcurrency(items, concurrency, mapper) {

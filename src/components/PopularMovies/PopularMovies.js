@@ -64,7 +64,10 @@ export default function PopularMovies({ movies = [] }) {
                 <span className={styles.rating}>
                   <span>★</span>
 
-                  {Number(movie.vote_average || 0).toFixed(1)}
+                  {movie.vote_average === null ||
+                  movie.vote_average === undefined
+                    ? '—'
+                    : Number(movie.vote_average).toFixed(1)}
                 </span>
               </div>
             </Link>

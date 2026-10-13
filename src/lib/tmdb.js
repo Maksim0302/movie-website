@@ -96,7 +96,7 @@ export async function getMovie(tmdbId) {
     poster_path: data.poster_path,
     backdrop_path: data.backdrop_path,
     release_date: data.release_date,
-    vote_average: data.vote_average ?? 0,
+    vote_average: data.vote_average ?? null,
     genres: Array.isArray(data.genres)
       ? data.genres.map((genre) => genre.name)
       : [],

@@ -11,12 +11,13 @@ export default async function Home() {
   const movies = await getMovies().catch(() => [])
   const series = await getSeries()
   const heroMovies = getPopularMovies(movies, 3)
+  const popularMovies = getPopularMovies(movies, 7)
 
   return (
     <>
       <Hero movies={heroMovies} />
 
-      <PopularMovies movies={movies} />
+      <PopularMovies movies={popularMovies} />
 
       <PopularSeries series={series} />
     </>
