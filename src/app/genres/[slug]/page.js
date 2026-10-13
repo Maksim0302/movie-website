@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import MovieCatalog from '@/components/MovieCatalog/MovieCatalog'
 import { getGenreBySlug } from '@/lib/genres'
 import { getMoviesByGenre } from '@/lib/movies'
+import { getMovieSort } from '@/lib/movie-sorting'
 import { getAbsoluteUrl } from '@/lib/site'
 
 export async function generateMetadata({ params }) {
@@ -46,7 +47,7 @@ export async function generateMetadata({ params }) {
 
 export default async function GenrePage({ params, searchParams }) {
   const { slug } = await params
-  const { page: requestedPage } = await searchParams
+  const { page: requestedPage, sort: requestedSort } = await searchParams
   const genre = getGenreBySlug(slug)
 
   if (!genre) {
@@ -63,23 +64,12 @@ export default async function GenrePage({ params, searchParams }) {
       className="container"
       style={{ paddingTop: 40, paddingBottom: 60 }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 24,
-        }}
-      >
-        <h1 style={{ color: '#fff', fontSize: 'clamp(24px, 4vw, 32px)' }}>
-          {genre.name}
-        </h1>
-      </div>
-
       <MovieCatalog
         movies={movies}
         initialPage={initialPage}
+        initialSort={getMovieSort(requestedSort).id}
         emptyMessage="Фильмов в этом жанре пока нет."
+        title={genre.name}
       />
     </section>
   )

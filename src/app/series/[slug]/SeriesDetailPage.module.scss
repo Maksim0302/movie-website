@@ -27,7 +27,7 @@
 .heroContent {
   position: relative;
   z-index: 1;
-  padding-top: 40px;
+  padding-top: 60px;
   padding-bottom: 40px;
 }
 
@@ -120,9 +120,7 @@
   color: #fff;
   font-weight: 700;
   text-align: center;
-  transition:
-    background-color 160ms ease,
-    border-color 160ms ease;
+  transition: background-color 160ms ease, border-color 160ms ease;
 }
 
 .youtubeButton {

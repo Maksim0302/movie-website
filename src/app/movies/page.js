@@ -1,4 +1,5 @@
 import { getMovies } from '@/lib/movies'
+import { getMovieSort } from '@/lib/movie-sorting'
 import MovieCatalog from '@/components/MovieCatalog/MovieCatalog'
 import { getAbsoluteUrl } from '@/lib/site'
 
@@ -33,7 +34,11 @@ function normalizeSearchText(value) {
 }
 
 export default async function MoviesPage({ searchParams }) {
-  const { page: requestedPage, search: requestedSearch } = await searchParams
+  const {
+    page: requestedPage,
+    search: requestedSearch,
+    sort: requestedSort,
+  } = await searchParams
   const searchQuery =
     typeof requestedSearch === 'string' ? requestedSearch.trim() : ''
   const catalog = await getMovies().catch(() => [])
@@ -56,23 +61,12 @@ export default async function MoviesPage({ searchParams }) {
       className="container"
       style={{ paddingTop: 40, paddingBottom: 60 }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 24,
-        }}
-      >
-        <h1 style={{ color: '#fff', fontSize: 'clamp(24px, 4vw, 32px)' }}>
-          Фильмы
-        </h1>
-      </div>
-
       <MovieCatalog
         movies={movies}
         initialPage={initialPage}
+        initialSort={getMovieSort(requestedSort).id}
         searchQuery={searchQuery}
+        title="Фильмы"
       />
     </section>
   )
