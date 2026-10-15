@@ -1,5 +1,6 @@
 import { getSeries } from '@/lib/series'
-import MovieGrid from '@/components/MovieGrid/MovieGrid'
+import { getMovieSort } from '@/lib/movie-sorting'
+import MovieCatalog from '@/components/MovieCatalog/MovieCatalog'
 import { getAbsoluteUrl } from '@/lib/site'
 
 export const revalidate = 60
@@ -27,26 +28,24 @@ export const metadata = {
   },
 }
 
-export default async function SeriesPage() {
+export default async function SeriesPage({ searchParams }) {
+  const { page: requestedPage, sort: requestedSort } = await searchParams
   const series = await getSeries()
+  const parsedPage = Number.parseInt(requestedPage, 10)
+  const initialPage =
+    Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
 
   return (
     <section
       className="container"
       style={{ paddingTop: 40, paddingBottom: 60 }}
     >
-      <h1
-        style={{
-          color: '#fff',
-          fontSize: 'clamp(24px, 4vw, 32px)',
-          marginBottom: 24,
-        }}
-      >
-        Сериалы
-      </h1>
-
-      <MovieGrid
+      <MovieCatalog
         movies={series}
+        initialPage={initialPage}
+        initialSort={getMovieSort(requestedSort).id}
+        title="Сериалы"
+        entityName="сериалов"
         hrefPrefix="series"
         emptyMessage="В каталоге пока нет сериалов."
       />

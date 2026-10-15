@@ -6,34 +6,36 @@ import { getImageUrl, getMovie } from './tmdb'
 const GENRE_CATALOG_LIMIT = 100
 const MOVIE_METADATA_CONCURRENCY = 8
 
+export function sortByRating(items = []) {
+  return [...(Array.isArray(items) ? items : [])].sort((first, second) => {
+    const firstRating = getMovieRating(first)
+    const secondRating = getMovieRating(second)
+
+    if (firstRating === null && secondRating !== null) {
+      return 1
+    }
+
+    if (firstRating !== null && secondRating === null) {
+      return -1
+    }
+
+    if (firstRating !== null && secondRating !== null) {
+      const ratingDifference = secondRating - firstRating
+
+      if (ratingDifference !== 0) {
+        return ratingDifference
+      }
+    }
+
+    return getCreatedAtTimestamp(second) - getCreatedAtTimestamp(first)
+  })
+}
+
 export function getPopularMovies(movies = [], limit = 3) {
   const requestedLimit = Number.isInteger(Number(limit)) ? Number(limit) : 3
   const resultLimit = Math.max(0, requestedLimit)
 
-  return [...(Array.isArray(movies) ? movies : [])]
-    .sort((first, second) => {
-      const firstRating = getMovieRating(first)
-      const secondRating = getMovieRating(second)
-
-      if (firstRating === null && secondRating !== null) {
-        return 1
-      }
-
-      if (firstRating !== null && secondRating === null) {
-        return -1
-      }
-
-      if (firstRating !== null && secondRating !== null) {
-        const ratingDifference = secondRating - firstRating
-
-        if (ratingDifference !== 0) {
-          return ratingDifference
-        }
-      }
-
-      return getCreatedAtTimestamp(second) - getCreatedAtTimestamp(first)
-    })
-    .slice(0, resultLimit)
+  return sortByRating(movies).slice(0, resultLimit)
 }
 
 function getMovieRating(movie) {

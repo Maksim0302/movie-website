@@ -34,6 +34,8 @@ export default function MovieCatalog({
   searchQuery = '',
   emptyMessage = 'В каталоге пока нет фильмов.',
   title = 'Фильмы',
+  entityName = 'фильмов',
+  hrefPrefix = 'movies',
 }) {
   const [currentSort, setCurrentSort] = useState(
     () => getMovieSort(initialSort).id
@@ -210,7 +212,7 @@ export default function MovieCatalog({
           >
             <div className={styles.dialogHeader}>
               <h2 id="movie-sort-title" className={styles.dialogTitle}>
-                Сортировка фильмов
+                Сортировка {entityName}
               </h2>
               <button
                 type="button"
@@ -250,7 +252,9 @@ export default function MovieCatalog({
                         >
                           {option.direction}
                         </span>
-                        <span>{option.description}</span>
+                        <span>
+                          {option.description.replace('фильмов', entityName)}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -272,13 +276,17 @@ export default function MovieCatalog({
 
       <div ref={listRef}>
         {movies.length ? (
-          <MovieGrid movies={visibleMovies} />
+          <MovieGrid movies={visibleMovies} hrefPrefix={hrefPrefix} />
         ) : searchQuery ? (
           <div className={styles.emptySearch}>
             <p>По вашему запросу ничего не найдено</p>
           </div>
         ) : (
-          <MovieGrid movies={visibleMovies} emptyMessage={emptyMessage} />
+          <MovieGrid
+            movies={visibleMovies}
+            hrefPrefix={hrefPrefix}
+            emptyMessage={emptyMessage}
+          />
         )}
       </div>
 

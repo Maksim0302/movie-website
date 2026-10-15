@@ -41,7 +41,12 @@ export default function PopularSeries({ series }) {
                 <span className={styles.rating}>
                   <span>★</span>
 
-                  {item.vote_average.toFixed(1)}
+                  {item.vote_average === null ||
+                  item.vote_average === undefined ||
+                  item.vote_average === '' ||
+                  !Number.isFinite(Number(item.vote_average))
+                    ? '—'
+                    : Number(item.vote_average).toFixed(1)}
                 </span>
               </div>
             </Link>
