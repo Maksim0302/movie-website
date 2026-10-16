@@ -1,4 +1,4 @@
-import { getCloudflareHlsUrl } from './cloudflare'
+import { getVideoUrl } from './cloudflare'
 import { getSupabaseServerClient } from './supabase'
 import { getImageUrl, getSeriesByTmdbId } from './tmdb'
 
@@ -15,7 +15,7 @@ async function hydrateSeries(series) {
       ...metadata,
       poster: getImageUrl(metadata.poster_path),
       backdrop: getImageUrl(metadata.backdrop_path, 'w1280'),
-      videoUrl: getCloudflareHlsUrl(series.video_id),
+      videoUrl: getVideoUrl(series.video_id),
     }
   } catch (error) {
     console.error('Failed to hydrate series:', error)
