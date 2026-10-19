@@ -152,6 +152,101 @@
   margin: 0 auto;
 }
 
+.seasonSelector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.seasonButton {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #18324b;
+  border-radius: 9px;
+  background: #0a1727;
+  color: #dfeaf8;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.seasonButton:hover {
+  border-color: #287ac2;
+}
+
+.activeSeasonButton {
+  border-color: #1689ff;
+  background: #087ef5;
+  color: #fff;
+}
+
+.episodeGrid {
+  display: grid;
+  // max-width: 250px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.episodeCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+  padding: 11px 14px;
+  border: 1px solid rgba(126, 161, 210, 0.3);
+  border-radius: 12px;
+  background: #0a1727;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.episodeCard:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(56, 145, 230, 0.8);
+  background: #0c2035;
+}
+
+.episodeCard:disabled {
+  color: #8191a5;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.activeEpisodeCard {
+  border-color: #1689ff;
+  background: rgba(8, 126, 245, 0.12);
+}
+
+.episodeInfo {
+  display: grid;
+  gap: 3px;
+}
+
+.episodeTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.episodeRuntime {
+  color: #a9b7c7;
+  font-size: 13px;
+}
+
+.episodePlayIcon {
+  flex: 0 0 auto;
+  color: #5ca8ff;
+  font-size: 15px;
+}
+
 .messageSection {
   padding-top: 60px;
   padding-bottom: 80px;
@@ -163,30 +258,6 @@
   border-radius: 16px;
   background: #0a1727;
   color: #dfeaf8;
-}
-
-@media (max-width: 640px) {
-  .hero {
-    min-height: 0;
-  }
-
-  .heroContent {
-    padding-top: 28px;
-    padding-bottom: 28px;
-  }
-
-  .seriesLayout {
-    gap: 22px;
-  }
-
-  .poster {
-    width: min(220px, 100%);
-    min-width: 0;
-  }
-
-  .title {
-    font-size: 34px;
-  }
 }
 
 @media (max-width: 1024px) {
@@ -201,6 +272,9 @@
 
   .title {
     font-size: clamp(32px, 4.2vw, 40px);
+  }
+  .episodeGrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -264,6 +338,40 @@
   .playerContainer {
     width: 100%;
   }
+
+  .episodeGrid {
+    grid-template-columns: 1fr;
+  }
+  .episodeGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    min-height: 0;
+  }
+
+  .heroContent {
+    padding-top: 28px;
+    padding-bottom: 28px;
+  }
+
+  .seriesLayout {
+    gap: 22px;
+  }
+
+  .poster {
+    width: min(220px, 100%);
+    min-width: 0;
+  }
+
+  .title {
+    font-size: 34px;
+  }
+  .episodeGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 480px) {
@@ -305,5 +413,8 @@
 
   .message {
     padding: 20px;
+  }
+  .episodeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

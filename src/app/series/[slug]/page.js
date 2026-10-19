@@ -2,10 +2,17 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer'
+import SeriesEpisodeSelector, {
+  SeriesPlaybackProvider,
+  SeriesTrailerButton,
+} from './SeriesEpisodeSelector'
+import movieStyles from '../../movies/[slug]/MovieDetailPage.module.scss'
 import { getSeriesBySlug } from '@/lib/series'
 import { getAbsoluteUrl } from '@/lib/site'
 import { getImageUrl } from '@/lib/tmdb'
 import styles from './SeriesDetailPage.module.scss'
+
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }) {
   const slug = (await params).slug
@@ -56,6 +63,16 @@ export default async function SeriesDetailPage({ params }) {
     notFound()
   }
 
+  const episodeSeasons = series.seasons || []
+  const initialPlaybackMode = series.videoUrl
+    ? 'trailer'
+    : episodeSeasons.length > 0
+      ? 'episode'
+      : 'idle'
+  const initialSeasonNumber =
+    initialPlaybackMode === 'episode'
+      ? episodeSeasons[0]?.seasonNumber ?? null
+      : null
   const releaseYear = series.release_date
     ? new Date(series.release_date).getFullYear()
     : '—'
@@ -74,102 +91,123 @@ export default async function SeriesDetailPage({ params }) {
   }
 
   return (
-    <section className={styles.page}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-
-      <div className={styles.hero}>
-        <Image
-          src={series.backdrop || getImageUrl(series.poster_path, 'w1280')}
-          alt={series.title}
-          fill
-          priority
-          className={styles.heroImage}
-          sizes="100vw"
+    <SeriesPlaybackProvider
+      initialMode={initialPlaybackMode}
+      initialSeasonNumber={initialSeasonNumber}
+    >
+      <section className={styles.page}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
 
-        <div className={styles.heroOverlay} />
+        <div className={styles.hero}>
+          <Image
+            src={series.backdrop || getImageUrl(series.poster_path, 'w1280')}
+            alt={series.title}
+            fill
+            priority
+            className={styles.heroImage}
+            sizes="100vw"
+          />
 
-        <div className={`container ${styles.heroContent}`}>
-          <div className={styles.seriesLayout}>
-            <div className={styles.poster}>
-              <Image
-                src={series.poster || getImageUrl(series.poster_path)}
-                alt={series.title}
-                fill
-                className={styles.posterImage}
-                sizes="(max-width: 480px) 40vw, (max-width: 768px) 30vw, 240px"
-              />
-            </div>
+          <div className={styles.heroOverlay} />
 
-            <div className={styles.seriesInfo}>
-              <h1 className={styles.title}>{series.title}</h1>
-              <p className={styles.originalTitle}>{series.original_title}</p>
-
-              <div className={styles.meta}>
-                <span>{releaseYear}</span>
-                <span>•</span>
-                <span>
-                  {series.number_of_seasons}{' '}
-                  {series.number_of_seasons === 1 ? 'сезон' : 'сезонов'}
-                </span>
-                <span>•</span>
-                <span>
-                  {series.number_of_episodes}{' '}
-                  {series.number_of_episodes === 1 ? 'серия' : 'серий'}
-                </span>
-                <span>•</span>
-                <span>★ {Number(series.vote_average || 0).toFixed(1)}</span>
+          <div className={`container ${styles.heroContent}`}>
+            <div className={styles.seriesLayout}>
+              <div className={styles.poster}>
+                <Image
+                  src={series.poster || getImageUrl(series.poster_path)}
+                  alt={series.title}
+                  fill
+                  className={styles.posterImage}
+                  sizes="(max-width: 480px) 40vw, (max-width: 768px) 30vw, 240px"
+                />
               </div>
 
-              <div className={styles.genres}>
-                {(series.genres || []).slice(0, 5).map((genre) => (
-                  <span key={genre} className={styles.genre}>
-                    {genre}
+              <div className={styles.seriesInfo}>
+                <h1 className={styles.title}>{series.title}</h1>
+                <p className={styles.originalTitle}>{series.original_title}</p>
+
+                <div className={styles.meta}>
+                  <span>{releaseYear}</span>
+                  <span>•</span>
+                  <span>
+                    {series.number_of_seasons}{' '}
+                    {series.number_of_seasons === 1 ? 'сезон' : 'сезонов'}
                   </span>
-                ))}
-              </div>
-
-              <p className={styles.overview}>{series.overview}</p>
-
-              {series.youtube_url || series.telegram_url ? (
-                <div className={styles.actions}>
-                  {series.youtube_url ? (
-                    <a
-                      href={series.youtube_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${styles.watchButton} ${styles.youtubeButton}`}
-                    >
-                      <span aria-hidden="true">▶</span>
-                      Смотреть сериал на YouTube
-                    </a>
-                  ) : null}
-                  {series.telegram_url ? (
-                    <a
-                      href={series.telegram_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${styles.watchButton} ${styles.telegramButton}`}
-                    >
-                      <span aria-hidden="true">✈</span>
-                      Смотреть сериал в Telegram
-                    </a>
-                  ) : null}
+                  <span>•</span>
+                  <span>
+                    {series.number_of_episodes}{' '}
+                    {series.number_of_episodes === 1 ? 'серия' : 'серий'}
+                  </span>
+                  <span>•</span>
+                  <span>★ {Number(series.vote_average || 0).toFixed(1)}</span>
                 </div>
-              ) : null}
+
+                <div className={styles.genres}>
+                  {(series.genres || []).slice(0, 5).map((genre) => (
+                    <span key={genre} className={styles.genre}>
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+
+                <p className={styles.overview}>{series.overview}</p>
+
+                {series.youtube_url ||
+                series.telegram_url ||
+                series.videoUrl ||
+                episodeSeasons.length > 0 ? (
+                  <div className={styles.actions}>
+                    {series.videoUrl || episodeSeasons.length > 0 ? (
+                      <a href="#player" className={movieStyles.watchButton}>
+                        Перейти к просмотру
+                      </a>
+                    ) : null}
+                    {series.videoUrl ? <SeriesTrailerButton /> : null}
+                    {series.youtube_url ? (
+                      <a
+                        href={series.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${styles.watchButton} ${styles.youtubeButton}`}
+                      >
+                        <span aria-hidden="true">▶</span>
+                        Смотреть сериал на YouTube
+                      </a>
+                    ) : null}
+                    {series.telegram_url ? (
+                      <a
+                        href={series.telegram_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${styles.watchButton} ${styles.telegramButton}`}
+                      >
+                        <span aria-hidden="true">✈</span>
+                        Смотреть сериал в Telegram
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className={`container ${styles.playerSection}`}>
-        <div id="player" className={styles.playerContainer}>
-          <VideoPlayer src={series.videoUrl || null} />
+        <div className={`container ${styles.playerSection}`}>
+          <div id="player" className={styles.playerContainer}>
+            {episodeSeasons.length > 0 || series.videoUrl ? (
+              <SeriesEpisodeSelector
+                seasons={episodeSeasons}
+                trailerUrl={series.videoUrl}
+              />
+            ) : (
+              <VideoPlayer src={null} />
+            )}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </SeriesPlaybackProvider>
   )
 }

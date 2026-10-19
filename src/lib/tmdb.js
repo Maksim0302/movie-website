@@ -151,6 +151,72 @@ export async function getSeriesByTmdbId(tmdbId) {
   }
 }
 
+export async function getSeriesEpisodeMetadata(tmdbId) {
+  if (!tmdbId) {
+    return null
+  }
+
+  const headers = getTmdbHeaders()
+
+  if (!headers) {
+    return null
+  }
+
+  const response = await fetch(`${TMDB_API_URL}/tv/${tmdbId}?language=ru-RU`, {
+    headers,
+    next: {
+      revalidate: 3600,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error('Не удалось получить сезоны сериала из TMDB')
+  }
+
+  const series = await response.json()
+  const seasons = (Array.isArray(series.seasons) ? series.seasons : []).filter(
+    (season) => season.season_number > 0
+  )
+
+  return Promise.all(
+    seasons.map(async (season) => {
+      const seasonResponse = await fetch(
+        `${TMDB_API_URL}/tv/${tmdbId}/season/${season.season_number}?language=ru-RU`,
+        {
+          headers,
+          next: {
+            revalidate: 3600,
+          },
+        }
+      )
+
+      if (!seasonResponse.ok) {
+        throw new Error(
+          `Не удалось получить серии ${season.season_number} сезона из TMDB`
+        )
+      }
+
+      const seasonData = await seasonResponse.json()
+
+      return {
+        seasonNumber: season.season_number,
+        episodes: (Array.isArray(seasonData.episodes)
+          ? seasonData.episodes
+          : []
+        )
+          .filter((episode) => episode.episode_number > 0)
+          .map((episode) => ({
+            episodeNumber: episode.episode_number,
+            runtime:
+              typeof episode.runtime === 'number' && episode.runtime > 0
+                ? episode.runtime
+                : null,
+          })),
+      }
+    })
+  )
+}
+
 export function getImageUrl(path, size = 'w500') {
   if (!path) {
     return '/img/no-poster.jpg'

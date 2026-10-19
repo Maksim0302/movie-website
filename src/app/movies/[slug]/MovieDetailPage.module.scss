@@ -126,6 +126,14 @@
   background: #1590ff;
 }
 
+.watchButton.trailerButtonInactive {
+  background: #0a1727;
+}
+
+.watchButton.trailerButtonInactive:hover {
+  background: #10243a;
+}
+
 .playerSection {
   padding-top: 36px;
 }

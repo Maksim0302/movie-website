@@ -14,8 +14,89 @@ export default function AdminSeriesPage() {
     telegramUrl: '',
   }
   const [form, setForm] = useState(emptyForm)
+  const [episodeSeasons, setEpisodeSeasons] = useState([])
+  const [episodeValues, setEpisodeValues] = useState({})
+  const [loadingEpisodeMetadata, setLoadingEpisodeMetadata] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  async function loadEpisodeMetadata(tmdbId) {
+    if (!tmdbId) {
+      return
+    }
+
+    setLoadingEpisodeMetadata(true)
+
+    try {
+      const response = await fetch(
+        `/api/series?tmdbId=${encodeURIComponent(tmdbId)}`
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось загрузить серии из TMDB.')
+      }
+
+      setEpisodeSeasons(Array.isArray(data) ? data : [])
+      setEpisodeValues(
+        Object.fromEntries(
+          (Array.isArray(data) ? data : []).flatMap((season) =>
+            season.episodes.map((episode) => [
+              `${season.seasonNumber}:${episode.episodeNumber}`,
+              {
+                videoPath: '',
+                durationMinutes: episode.runtime || '',
+              },
+            ])
+          )
+        )
+      )
+    } catch (loadError) {
+      setError(loadError.message)
+    } finally {
+      setLoadingEpisodeMetadata(false)
+    }
+  }
+
+  async function loadStoredEpisodes(seriesId, tmdbId) {
+    const response = await fetch(
+      `/api/series?seriesId=${encodeURIComponent(seriesId)}`
+    )
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Не удалось загрузить серии из Supabase.')
+    }
+
+    const storedSeasons = Array.isArray(data) ? data : []
+
+    if (storedSeasons.length === 0) {
+      await loadEpisodeMetadata(tmdbId)
+      return
+    }
+
+    setEpisodeSeasons(
+      storedSeasons.map((season) => ({
+        seasonNumber: season.seasonNumber,
+        episodes: season.episodes.map((episode) => ({
+          episodeNumber: episode.episodeNumber,
+        })),
+      }))
+    )
+    setEpisodeValues(
+      Object.fromEntries(
+        storedSeasons.flatMap((season) =>
+          season.episodes.map((episode) => [
+            `${season.seasonNumber}:${episode.episodeNumber}`,
+            {
+              videoPath: episode.videoPath || '',
+              durationMinutes: episode.durationMinutes || '',
+            },
+          ])
+        )
+      )
+    )
+  }
 
   async function loadSeries() {
     try {
@@ -50,6 +131,21 @@ export default function AdminSeriesPage() {
           tmdbId: Number(form.tmdbId),
           slug: form.slug,
           videoId: form.videoId,
+          episodes: episodeSeasons.flatMap((season) =>
+            season.episodes.map((episode) => {
+              const values =
+                episodeValues[
+                  `${season.seasonNumber}:${episode.episodeNumber}`
+                ] || {}
+
+              return {
+                seasonNumber: season.seasonNumber,
+                episodeNumber: episode.episodeNumber,
+                durationMinutes: values.durationMinutes,
+                videoPath: values.videoPath,
+              }
+            })
+          ),
           youtubeUrl: form.youtubeUrl,
           telegramUrl: form.telegramUrl,
         }),
@@ -62,6 +158,8 @@ export default function AdminSeriesPage() {
 
       setSuccess(form.id ? 'Сериал успешно обновлён.' : 'Сериал успешно добавлен.')
       setForm(emptyForm)
+      setEpisodeSeasons([])
+      setEpisodeValues({})
       await loadSeries()
     } catch (submitError) {
       setError(submitError.message)
@@ -79,6 +177,11 @@ export default function AdminSeriesPage() {
       youtubeUrl: seriesItem.youtube_url || '',
       telegramUrl: seriesItem.telegram_url || '',
     })
+    setEpisodeSeasons([])
+    setEpisodeValues({})
+    loadStoredEpisodes(seriesItem.id, seriesItem.tmdb_id).catch((loadError) =>
+      setError(loadError.message)
+    )
   }
 
   async function handleDelete(slug) {
@@ -129,7 +232,11 @@ export default function AdminSeriesPage() {
         {[
           { name: 'tmdbId', label: 'TMDB ID', type: 'number' },
           { name: 'slug', label: 'Slug', type: 'text' },
-          { name: 'videoId', label: 'Cloudflare Video ID', type: 'text' },
+          {
+            name: 'videoId',
+            label: 'Cloudflare Video ID всего сериала (необязательно)',
+            type: 'text',
+          },
           { name: 'youtubeUrl', label: 'YouTube URL', type: 'url' },
           { name: 'telegramUrl', label: 'Telegram URL', type: 'url' },
         ].map((field) => (
@@ -141,13 +248,25 @@ export default function AdminSeriesPage() {
             <input
               name={field.name}
               type={field.type}
-              required={!['youtubeUrl', 'telegramUrl'].includes(field.name)}
+              required={
+                !['youtubeUrl', 'telegramUrl', 'videoId'].includes(field.name)
+              }
               value={form[field.name]}
-              onChange={(event) =>
+              onChange={(event) => {
+                const value = event.target.value
                 setForm((current) => ({
                   ...current,
-                  [field.name]: event.target.value,
+                  [field.name]: value,
                 }))
+                if (field.name === 'tmdbId' && value !== form.tmdbId) {
+                  setEpisodeSeasons([])
+                  setEpisodeValues({})
+                }
+              }}
+              onBlur={
+                field.name === 'tmdbId'
+                  ? () => loadEpisodeMetadata(form.tmdbId)
+                  : undefined
               }
               style={{
                 padding: '12px 14px',
@@ -158,6 +277,86 @@ export default function AdminSeriesPage() {
               }}
             />
           </label>
+        ))}
+
+        {loadingEpisodeMetadata ? (
+          <p style={{ color: '#a9b7c7' }}>Загружаем список серий из TMDB…</p>
+        ) : null}
+        {episodeSeasons.map((season) => (
+          <fieldset
+            key={season.seasonNumber}
+            style={{
+              display: 'grid',
+              gap: 12,
+              minWidth: 0,
+              padding: 14,
+              border: '1px solid #1b3b5d',
+              borderRadius: 10,
+            }}
+          >
+            <legend style={{ padding: '0 6px', color: '#dfeaf8' }}>
+              {season.seasonNumber} сезон
+            </legend>
+            {season.episodes.map((episode) => {
+              const key = `${season.seasonNumber}:${episode.episodeNumber}`
+
+              return (
+                <label
+                  key={key}
+                  style={{ display: 'grid', gap: 6, color: '#dfeaf8' }}
+                >
+                  <span>
+                    {episode.episodeNumber} серия — видео и длительность
+                  </span>
+                  <input
+                    type="text"
+                    aria-label={`${episode.episodeNumber} серия — video_path`}
+                    placeholder="video_path (Cloudflare ID или r2:...)"
+                    value={episodeValues[key]?.videoPath || ''}
+                    onChange={(event) =>
+                      setEpisodeValues((current) => ({
+                        ...current,
+                        [key]: {
+                          ...current[key],
+                          videoPath: event.target.value,
+                        },
+                      }))
+                    }
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      border: '1px solid #1b3b5d',
+                      background: '#0d1d2d',
+                      color: '#fff',
+                    }}
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    aria-label={`${episode.episodeNumber} серия — duration_minutes`}
+                    placeholder="Длительность, минут"
+                    value={episodeValues[key]?.durationMinutes || ''}
+                    onChange={(event) =>
+                      setEpisodeValues((current) => ({
+                        ...current,
+                        [key]: {
+                          ...current[key],
+                          durationMinutes: event.target.value,
+                        },
+                      }))
+                    }
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      border: '1px solid #1b3b5d',
+                      background: '#0d1d2d',
+                      color: '#fff',
+                    }}
+                  />
+                </label>
+              )
+            })}
+          </fieldset>
         ))}
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -178,7 +377,11 @@ export default function AdminSeriesPage() {
           {form.id ? (
             <button
               type="button"
-              onClick={() => setForm(emptyForm)}
+              onClick={() => {
+                setForm(emptyForm)
+                setEpisodeSeasons([])
+                setEpisodeValues({})
+              }}
               style={{
                 padding: '12px 18px',
                 borderRadius: 10,
