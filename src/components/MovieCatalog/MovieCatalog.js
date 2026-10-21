@@ -36,6 +36,7 @@ export default function MovieCatalog({
   title = 'Фильмы',
   entityName = 'фильмов',
   hrefPrefix = 'movies',
+  clearSearchHref = '/movies',
 }) {
   const [currentSort, setCurrentSort] = useState(
     () => getMovieSort(initialSort).id
@@ -268,7 +269,7 @@ export default function MovieCatalog({
       {searchQuery ? (
         <div className={styles.searchSummary}>
           <span>Результаты поиска: «{searchQuery}»</span>
-          <Link href="/movies" className={styles.clearSearch}>
+          <Link href={clearSearchHref} className={styles.clearSearch}>
             Очистить поиск
           </Link>
         </div>

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import MovieCatalog from '@/components/MovieCatalog/MovieCatalog'
 import { getGenreBySlug } from '@/lib/genres'
 import { getMoviesByGenre } from '@/lib/movies'
+import { getSeriesByGenre } from '@/lib/series'
 import { getMovieSort } from '@/lib/movie-sorting'
 import { getAbsoluteUrl } from '@/lib/site'
 
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }) {
     }
   }
 
-  const description = `Смотрите ${genre.name.toLowerCase()} в каталоге КиноТерапии — подборки фильмов, новинки и лучшие картины по жанру.`
+  const description = `Смотрите ${genre.name.toLowerCase()} в каталоге КиноТерапии — подборки фильмов и сериалов по жанру.`
 
   return {
     title: `${genre.name} — КиноТерапия`,
@@ -54,7 +55,14 @@ export default async function GenrePage({ params, searchParams }) {
     notFound()
   }
 
-  const movies = await getMoviesByGenre(genre.id)
+  const [movies, series] = await Promise.all([
+    getMoviesByGenre(genre.id),
+    getSeriesByGenre(genre.seriesId),
+  ])
+  const content = [
+    ...movies.map((movie) => ({ ...movie, type: 'movie' })),
+    ...series,
+  ]
   const parsedPage = Number.parseInt(requestedPage, 10)
   const initialPage =
     Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1
@@ -65,10 +73,10 @@ export default async function GenrePage({ params, searchParams }) {
       style={{ paddingTop: 40, paddingBottom: 60 }}
     >
       <MovieCatalog
-        movies={movies}
+        movies={content}
         initialPage={initialPage}
         initialSort={getMovieSort(requestedSort).id}
-        emptyMessage="Фильмов в этом жанре пока нет."
+        emptyMessage="Фильмов и сериалов в этом жанре пока нет."
         title={genre.name}
       />
     </section>

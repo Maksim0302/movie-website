@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 
+import SeriesBadge from '@/components/SeriesBadge/SeriesBadge'
 import styles from './PopularSeries.module.scss'
 
 import { getImageUrl } from '@/lib/tmdb'
@@ -32,6 +33,8 @@ export default function PopularSeries({ series }) {
                   sizes="(max-width: 768px) 140px, 180px"
                 />
               </div>
+
+              <SeriesBadge />
 
               <h3 className={styles.name}>{item.title}</h3>
 

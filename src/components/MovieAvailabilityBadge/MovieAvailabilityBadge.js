@@ -3,6 +3,7 @@ import styles from './MovieAvailabilityBadge.module.scss'
 const AVAILABILITY_LABELS = {
   full_movie: 'Полный фильм',
   trailer_only: 'Только трейлер',
+  series_available: 'Серии доступны',
 }
 
 export default function MovieAvailabilityBadge({ status }) {
@@ -12,7 +13,5 @@ export default function MovieAvailabilityBadge({ status }) {
 
   const label = AVAILABILITY_LABELS[status]
 
-  return (
-    <span className={`${styles.badge} ${styles[status]}`}>{label}</span>
-  )
+  return <span className={`${styles.badge} ${styles[status]}`}>{label}</span>
 }

@@ -3,7 +3,7 @@ import { getMovieAvailabilityStatus } from './movie-availability'
 import { getSupabaseServerClient } from './supabase'
 import { getImageUrl, getMovie } from './tmdb'
 
-const GENRE_CATALOG_LIMIT = 100
+const GENRE_CATALOG_PAGE_SIZE = 500
 const MOVIE_METADATA_CONCURRENCY = 8
 
 export function sortByRating(items = []) {
@@ -92,19 +92,32 @@ export async function getMoviesByGenre(genreId) {
   }
 
   try {
-    const { data, error } = await supabase
-      .from('movies')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(GENRE_CATALOG_LIMIT)
+    const catalog = []
+    let offset = 0
 
-    if (error) {
-      console.error('Supabase getMoviesByGenre error:', error.message)
-      return []
+    while (true) {
+      const { data, error } = await supabase
+        .from('movies')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + GENRE_CATALOG_PAGE_SIZE - 1)
+
+      if (error) {
+        console.error('Supabase getMoviesByGenre error:', error.message)
+        return []
+      }
+
+      catalog.push(...(data || []))
+
+      if (!data || data.length < GENRE_CATALOG_PAGE_SIZE) {
+        break
+      }
+
+      offset += GENRE_CATALOG_PAGE_SIZE
     }
 
     const hydratedMovies = await mapWithConcurrency(
-      data || [],
+      catalog,
       MOVIE_METADATA_CONCURRENCY,
       async (movie) => {
         try {

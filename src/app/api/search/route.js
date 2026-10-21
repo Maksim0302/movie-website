@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 
+import { getMovieAvailabilityStatus } from '@/lib/movie-availability'
+import { getVideoUrl } from '@/lib/cloudflare'
 import { getMovie, getSeriesByTmdbId } from '@/lib/tmdb'
 import { getSupabaseServerClient } from '@/lib/supabase'
 
-const MAX_RESULTS = 12
 const METADATA_CONCURRENCY = 8
 const CATALOG_PAGE_SIZE = 500
 
@@ -40,11 +41,15 @@ async function mapWithConcurrency(items, concurrency, mapper) {
 async function searchCatalog(supabase, table, type) {
   const catalog = []
   let offset = 0
+  const select =
+    type === 'movie'
+      ? 'id, tmdb_id, slug, created_at, video_id, trailer_video_id'
+      : 'id, tmdb_id, slug, created_at, video_id, youtube_url, telegram_url'
 
   while (true) {
     const { data, error } = await supabase
       .from(table)
-      .select('id, tmdb_id, slug, created_at')
+      .select(select)
       .order('created_at', { ascending: false })
       .range(offset, offset + CATALOG_PAGE_SIZE - 1)
 
@@ -62,6 +67,60 @@ async function searchCatalog(supabase, table, type) {
   }
 
   return catalog.map((item) => ({ ...item, type }))
+}
+
+async function addSeriesAvailability(supabase, series) {
+  if (series.length === 0) {
+    return new Map()
+  }
+
+  const { data: seasons, error: seasonsError } = await supabase
+    .from('series_seasons')
+    .select('id, series_id')
+    .in(
+      'series_id',
+      series.map((item) => item.id)
+    )
+
+  if (seasonsError) {
+    throw new Error(`Не удалось получить сезоны сериалов: ${seasonsError.message}`)
+  }
+
+  const seasonIds = (seasons || []).map((season) => season.id)
+  const { data: episodes, error: episodesError } = seasonIds.length
+    ? await supabase
+        .from('series_episodes')
+        .select('season_id, video_path')
+        .in('season_id', seasonIds)
+    : { data: [], error: null }
+
+  if (episodesError) {
+    throw new Error(`Не удалось получить серии сериалов: ${episodesError.message}`)
+  }
+
+  const seriesWithEpisodes = new Set()
+  const seriesBySeasonId = new Map(
+    (seasons || []).map((season) => [season.id, season.series_id])
+  )
+
+  for (const episode of episodes || []) {
+    if (getVideoUrl(episode.video_path)) {
+      seriesWithEpisodes.add(seriesBySeasonId.get(episode.season_id))
+    }
+  }
+
+  return new Map(
+    series.map((item) => [
+      item.id,
+      {
+        series_has_episodes:
+          seriesWithEpisodes.has(item.id) ||
+          Boolean(item.youtube_url?.trim()) ||
+          Boolean(item.telegram_url?.trim()),
+        series_has_trailer: Boolean(getVideoUrl(item.video_id)),
+      },
+    ])
+  )
 }
 
 export async function GET(request) {
@@ -85,7 +144,17 @@ export async function GET(request) {
       searchCatalog(supabase, 'movies', 'movie'),
       searchCatalog(supabase, 'series', 'series'),
     ])
-    const catalog = [...movies, ...series]
+    const seriesAvailability = await addSeriesAvailability(supabase, series)
+    const catalog = [
+      ...movies.map((item) => ({
+        ...item,
+        availability_status: getMovieAvailabilityStatus(item),
+      })),
+      ...series.map((item) => ({
+        ...item,
+        ...seriesAvailability.get(item.id),
+      })),
+    ]
     const normalizedQuery = normalizeText(query)
 
     const matches = await mapWithConcurrency(
@@ -121,6 +190,10 @@ export async function GET(request) {
           overview: metadata.overview,
           release_date: metadata.release_date,
           poster_path: metadata.poster_path,
+          vote_average: metadata.vote_average,
+          availability_status: item.availability_status,
+          series_has_episodes: item.series_has_episodes,
+          series_has_trailer: item.series_has_trailer,
         }
       }
     )
@@ -136,10 +209,8 @@ export async function GET(request) {
         if (leftStartsWithQuery !== rightStartsWithQuery) {
           return leftStartsWithQuery ? -1 : 1
         }
-
         return 0
       })
-      .slice(0, MAX_RESULTS)
 
     return NextResponse.json({ results })
   } catch (error) {

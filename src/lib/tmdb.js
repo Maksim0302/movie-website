@@ -142,9 +142,12 @@ export async function getSeriesByTmdbId(tmdbId) {
     poster_path: data.poster_path,
     backdrop_path: data.backdrop_path,
     release_date: data.first_air_date,
-    vote_average: data.vote_average ?? 0,
+    vote_average: data.vote_average ?? null,
     genres: Array.isArray(data.genres)
       ? data.genres.map((genre) => genre.name)
+      : [],
+    genre_ids: Array.isArray(data.genres)
+      ? data.genres.map((genre) => genre.id)
       : [],
     number_of_seasons: data.number_of_seasons ?? 0,
     number_of_episodes: data.number_of_episodes ?? 0,

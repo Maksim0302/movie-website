@@ -18,7 +18,7 @@ export default function Header() {
   const searchContainerRef = useRef(null)
   const headerRef = useRef(null)
 
-  function submitMovieSearch(event) {
+  function submitSearch(event) {
     if (event.key !== 'Enter') {
       return
     }
@@ -31,7 +31,7 @@ export default function Header() {
     }
 
     closeSearch()
-    router.push(`/movies?search=${encodeURIComponent(query)}`)
+    router.push(`/search?q=${encodeURIComponent(query)}`)
   }
 
   const closeSearch = useCallback(() => {
@@ -250,7 +250,7 @@ export default function Header() {
                     aria-label="Поиск фильмов и сериалов"
                     aria-controls="header-search-results"
                     value={searchQuery}
-                    onKeyDown={submitMovieSearch}
+                    onKeyDown={submitSearch}
                     onChange={(event) => {
                       const nextQuery = event.target.value
                       setSearchQuery(nextQuery)

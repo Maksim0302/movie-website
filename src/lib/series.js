@@ -2,6 +2,31 @@ import { getVideoUrl } from './cloudflare'
 import { getSupabaseServerClient } from './supabase'
 import { getImageUrl, getSeriesByTmdbId } from './tmdb'
 
+const SERIES_GENRE_CATALOG_PAGE_SIZE = 500
+const SERIES_METADATA_CONCURRENCY = 8
+
+async function mapWithConcurrency(items, concurrency, mapper) {
+  const results = new Array(items.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex
+      nextIndex += 1
+      results[index] = await mapper(items[index])
+    }
+  }
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(concurrency, items.length) },
+      () => worker()
+    )
+  )
+
+  return results
+}
+
 async function hydrateSeries(series, includeEpisodes = false) {
   try {
     const metadata = await getSeriesByTmdbId(series.tmdb_id)
@@ -64,6 +89,79 @@ async function hydrateSeries(series, includeEpisodes = false) {
   } catch (error) {
     console.error('Failed to hydrate series:', error)
     return null
+  }
+}
+
+export async function getSeriesByGenre(genreId) {
+  const numericGenreId = Number(genreId)
+
+  if (!Number.isInteger(numericGenreId) || numericGenreId <= 0) {
+    return []
+  }
+
+  const supabase = getSupabaseServerClient()
+
+  if (!supabase) {
+    return []
+  }
+
+  try {
+    const catalog = []
+    let offset = 0
+
+    while (true) {
+      const { data, error } = await supabase
+        .from('series')
+        .select(
+          'id, tmdb_id, slug, video_id, youtube_url, telegram_url, created_at'
+        )
+        .order('created_at', { ascending: false })
+        .range(offset, offset + SERIES_GENRE_CATALOG_PAGE_SIZE - 1)
+
+      if (error) {
+        console.error('Supabase getSeriesByGenre error:', error.message)
+        return []
+      }
+
+      catalog.push(...(data || []))
+
+      if (!data || data.length < SERIES_GENRE_CATALOG_PAGE_SIZE) {
+        break
+      }
+
+      offset += SERIES_GENRE_CATALOG_PAGE_SIZE
+    }
+
+    const hydratedSeries = await mapWithConcurrency(
+      catalog,
+      SERIES_METADATA_CONCURRENCY,
+      async (seriesItem) => {
+        try {
+          const metadata = await getSeriesByTmdbId(seriesItem.tmdb_id)
+
+          if (!metadata?.genre_ids?.includes(numericGenreId)) {
+            return null
+          }
+
+          return {
+            ...seriesItem,
+            ...metadata,
+            poster: getImageUrl(metadata.poster_path),
+            backdrop: getImageUrl(metadata.backdrop_path, 'w1280'),
+            videoUrl: getVideoUrl(seriesItem.video_id),
+            type: 'series',
+          }
+        } catch (seriesError) {
+          console.error('Failed to hydrate series by genre:', seriesError)
+          return null
+        }
+      }
+    )
+
+    return hydratedSeries.filter(Boolean)
+  } catch (error) {
+    console.error('Supabase getSeriesByGenre failed:', error)
+    return []
   }
 }
 
