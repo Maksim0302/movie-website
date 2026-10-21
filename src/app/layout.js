@@ -2,7 +2,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.scss'
 import Header from '@/components/Header/Header'
 import Footer from '@/components/Footer/Footer'
-import { getAbsoluteUrl, getSiteUrl } from '@/lib/site'
+import { getAbsoluteUrl, getSiteUrl, serializeJsonLd } from '@/lib/site'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -15,6 +15,15 @@ const geistMono = Geist_Mono({
 })
 
 const siteUrl = getSiteUrl()
+const absoluteSiteUrl = getAbsoluteUrl('/')
+
+const websiteStructuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'КиноТерапия',
+  alternateName: 'КиноТерапия',
+  url: absoluteSiteUrl,
+}
 
 export const metadata = {
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
@@ -23,6 +32,7 @@ export const metadata = {
     default: 'КиноТерапия',
     template: '%s | КиноТерапия',
   },
+
   applicationName: 'КиноТерапия',
 
   description:
@@ -40,7 +50,7 @@ export const metadata = {
     title: 'КиноТерапия',
     description:
       'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
-    url: getAbsoluteUrl('/'),
+    url: absoluteSiteUrl,
     siteName: 'КиноТерапия',
     locale: 'ru_RU',
     type: 'website',
@@ -76,6 +86,16 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteStructuredData).replace(
+              /</g,
+              '\\u003c'
+            ),
+          }}
+        />
+
         <Header />
 
         <main>{children}</main>
