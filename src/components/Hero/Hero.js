@@ -68,9 +68,7 @@ export default function Hero({ movies = [] }) {
                 {year && <span>{year}</span>}
                 {year && duration && <span>•</span>}
                 {duration && <span>{duration}</span>}
-                {(year || duration) && movie.vote_average > 0 && (
-                  <span>•</span>
-                )}
+                {(year || duration) && movie.vote_average > 0 && <span>•</span>}
                 {movie.vote_average > 0 && (
                   <span>★ {Number(movie.vote_average).toFixed(1)}</span>
                 )}
