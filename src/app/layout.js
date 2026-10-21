@@ -2,7 +2,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.scss'
 import Header from '@/components/Header/Header'
 import Footer from '@/components/Footer/Footer'
-import { getSiteUrl } from '@/lib/site'
+import { getAbsoluteUrl, getSiteUrl } from '@/lib/site'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -23,16 +23,13 @@ export const metadata = {
     default: 'КиноТерапия',
     template: '%s | КиноТерапия',
   },
+  applicationName: 'КиноТерапия',
 
   description:
     'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
 
   verification: {
     google: 'pgnIJp98x4AINyr8BSJs-18x6LIYAVmplyPwSAZoIOQ',
-  },
-
-  alternates: {
-    canonical: '/',
   },
 
   icons: {
@@ -43,7 +40,7 @@ export const metadata = {
     title: 'КиноТерапия',
     description:
       'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
-    url: '/',
+    url: getAbsoluteUrl('/'),
     siteName: 'КиноТерапия',
     locale: 'ru_RU',
     type: 'website',

@@ -1,3 +1,5 @@
+import { getAbsoluteUrl } from '@/lib/site'
+
 export default function robots() {
   return {
     rules: {
@@ -5,6 +7,6 @@ export default function robots() {
       allow: '/',
       disallow: ['/admin', '/api'],
     },
-    sitemap: 'https://kinoterapiya.vercel.app/sitemap.xml',
+    sitemap: getAbsoluteUrl('/sitemap.xml'),
   }
 }

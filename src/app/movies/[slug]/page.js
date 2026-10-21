@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 import MoviePlayback from '@/components/MoviePlayback/MoviePlayback'
 import { getMovieBySlug } from '@/lib/movies'
-import { getAbsoluteUrl } from '@/lib/site'
+import { getAbsoluteUrl, serializeJsonLd } from '@/lib/site'
 import { getImageUrl } from '@/lib/tmdb'
 import styles from './MovieDetailPage.module.scss'
 
@@ -83,7 +83,7 @@ export default async function MovieDetailPage({ params }) {
     <section className={styles.page}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
       />
 
       <div className={styles.hero}>

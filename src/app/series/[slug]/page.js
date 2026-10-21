@@ -8,7 +8,7 @@ import SeriesEpisodeSelector, {
 } from './SeriesEpisodeSelector'
 import movieStyles from '../../movies/[slug]/MovieDetailPage.module.scss'
 import { getSeriesBySlug } from '@/lib/series'
-import { getAbsoluteUrl } from '@/lib/site'
+import { getAbsoluteUrl, serializeJsonLd } from '@/lib/site'
 import { getImageUrl } from '@/lib/tmdb'
 import styles from './SeriesDetailPage.module.scss'
 
@@ -98,7 +98,7 @@ export default async function SeriesDetailPage({ params }) {
       <section className={styles.page}>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
         />
 
         <div className={styles.hero}>
