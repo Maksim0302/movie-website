@@ -43,7 +43,8 @@ export const metadata = {
   },
 
   icons: {
-    icon: '/img/logo/logo.png',
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
   },
 
   openGraph: {
@@ -56,7 +57,7 @@ export const metadata = {
     type: 'website',
     images: [
       {
-        url: '/img/logo/logo.png',
+        url: '/favicon.ico',
         width: 512,
         height: 512,
         alt: 'КиноТерапия',
@@ -69,7 +70,7 @@ export const metadata = {
     title: 'КиноТерапия',
     description:
       'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
-    images: ['/img/logo/logo.png'],
+    images: ['/favicon.ico'],
   },
 
   robots: {
