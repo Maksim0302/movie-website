@@ -26,7 +26,7 @@ const websiteStructuredData = {
 }
 
 export const metadata = {
-  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
+  metadataBase: new URL(siteUrl),
 
   title: {
     default: 'КиноТерапия',
@@ -57,9 +57,9 @@ export const metadata = {
     type: 'website',
     images: [
       {
-        url: '/favicon.ico',
-        width: 512,
-        height: 512,
+        url: '/img/logo/logo.png',
+        width: 200,
+        height: 70,
         alt: 'КиноТерапия',
       },
     ],
@@ -70,7 +70,7 @@ export const metadata = {
     title: 'КиноТерапия',
     description:
       'Каталог фильмов и сериалов: лучшие новинки, жанры, трейлеры и онлайн-просмотр в одном месте.',
-    images: ['/favicon.ico'],
+    images: ['/img/logo/logo.png'],
   },
 
   robots: {
@@ -90,10 +90,7 @@ export default function RootLayout({ children }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(websiteStructuredData).replace(
-              /</g,
-              '\\u003c'
-            ),
+            __html: serializeJsonLd(websiteStructuredData),
           }}
         />
 
