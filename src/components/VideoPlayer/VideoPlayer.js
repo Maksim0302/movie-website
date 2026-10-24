@@ -228,18 +228,33 @@ function getVideoErrorMessage(errorCode) {
   return 'Видео временно недоступно'
 }
 
-export default function VideoPlayer({ src, title }) {
+export default function VideoPlayer({
+  src,
+  title,
+  autoPlay = false,
+  onEnded,
+}) {
   if (!src) {
     return <div className={styles.empty}>Видео пока недоступно</div>
   }
 
-  return <HlsVideo key={src} src={src} title={title} />
+  return (
+    <HlsVideo
+      key={src}
+      src={src}
+      title={title}
+      autoPlay={autoPlay}
+      onEnded={onEnded}
+    />
+  )
 }
 
-function HlsVideo({ src, title }) {
+function HlsVideo({ src, title, autoPlay, onEnded }) {
   const videoRef = useRef(null)
+  const hasEnded = useRef(false)
   const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isAutoPlayBlocked, setIsAutoPlayBlocked] = useState(false)
 
   useEffect(() => {
     const video = videoRef.current
@@ -432,6 +447,63 @@ function HlsVideo({ src, title }) {
     }
   }, [src])
 
+  useEffect(() => {
+    if (!autoPlay) {
+      return undefined
+    }
+
+    const video = videoRef.current
+
+    if (!video) {
+      return undefined
+    }
+
+    let playAttempted = false
+
+    function attemptPlay() {
+      if (playAttempted) {
+        return
+      }
+
+      playAttempted = true
+      const playPromise = video.play()
+
+      if (playPromise?.then) {
+        playPromise
+          .then(() => setIsAutoPlayBlocked(false))
+          .catch((error) => {
+            if (error.name !== 'AbortError') {
+              setIsAutoPlayBlocked(true)
+            }
+          })
+      }
+    }
+
+    video.addEventListener('canplay', attemptPlay)
+
+    if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      attemptPlay()
+    }
+
+    return () => {
+      video.removeEventListener('canplay', attemptPlay)
+    }
+  }, [autoPlay, src])
+
+  function handleManualPlay() {
+    const playPromise = videoRef.current?.play()
+
+    if (playPromise?.then) {
+      playPromise
+        .then(() => setIsAutoPlayBlocked(false))
+        .catch((error) => {
+          if (error.name !== 'AbortError') {
+            console.error('[VideoPlayer] Manual playback failed:', error)
+          }
+        })
+    }
+  }
+
   if (hasError) {
     return (
       <div className={styles.empty}>
@@ -450,7 +522,22 @@ function HlsVideo({ src, title }) {
         controls
         playsInline
         preload="metadata"
+        onEnded={() => {
+          if (!hasEnded.current) {
+            hasEnded.current = true
+            onEnded?.()
+          }
+        }}
       />
+      {isAutoPlayBlocked ? (
+        <button
+          type="button"
+          className={styles.autoPlayButton}
+          onClick={handleManualPlay}
+        >
+          Запустить следующую серию
+        </button>
+      ) : null}
     </div>
   )
 }

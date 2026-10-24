@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 
 import VideoPlayer from '../../../components/VideoPlayer/VideoPlayer'
 import movieStyles from '../../movies/[slug]/MovieDetailPage.module.scss'
@@ -69,6 +69,16 @@ export default function SeriesEpisodeSelector({ seasons, trailerUrl }) {
         )
       : null
   )
+  const [autoPlayNext, setAutoPlayNext] = useState(false)
+  const availableEpisodes = seasons.flatMap((season) =>
+    season.episodes
+      .filter((episode) => episode.videoUrl)
+      .map((episode) => ({ ...episode, seasonNumber: season.seasonNumber }))
+  ).sort(
+    (first, second) =>
+      first.seasonNumber - second.seasonNumber ||
+      first.episodeNumber - second.episodeNumber
+  )
   const selectedEpisode = seasons
     .find((season) => season.seasonNumber === selectedSeasonNumber)
     ?.episodes.find(
@@ -77,15 +87,53 @@ export default function SeriesEpisodeSelector({ seasons, trailerUrl }) {
         selectedEpisodeKey
     )
 
+  useEffect(() => {
+    if (mode !== 'episode') {
+      setAutoPlayNext(false)
+    }
+  }, [mode])
+
   function selectSeason(season) {
     setSelectedSeasonNumber(season.seasonNumber)
     const firstEpisode = season.episodes[0]
     setMode('episode')
+    setAutoPlayNext(false)
     setSelectedEpisodeKey(
       firstEpisode
         ? getEpisodeKey(season.seasonNumber, firstEpisode.episodeNumber)
         : null
     )
+  }
+
+  function selectEpisode(episodeKey) {
+    setSelectedEpisodeKey(episodeKey)
+    setAutoPlayNext(false)
+    setMode('episode')
+  }
+
+  function playNextEpisode() {
+    const currentIndex = availableEpisodes.findIndex(
+      (episode) =>
+        getEpisodeKey(episode.seasonNumber, episode.episodeNumber) ===
+        selectedEpisodeKey
+    )
+
+    if (currentIndex < 0) {
+      return
+    }
+
+    const nextEpisode = availableEpisodes[currentIndex + 1]
+
+    if (!nextEpisode) {
+      setAutoPlayNext(false)
+      return
+    }
+
+    setSelectedSeasonNumber(nextEpisode.seasonNumber)
+    setSelectedEpisodeKey(
+      getEpisodeKey(nextEpisode.seasonNumber, nextEpisode.episodeNumber)
+    )
+    setAutoPlayNext(true)
   }
 
   return (
@@ -130,10 +178,7 @@ export default function SeriesEpisodeSelector({ seasons, trailerUrl }) {
                         : ''
                     }`}
                     aria-pressed={isSelected && mode === 'episode'}
-                    onClick={() => {
-                      setSelectedEpisodeKey(episodeKey)
-                      setMode('episode')
-                    }}
+                    onClick={() => selectEpisode(episodeKey)}
                   >
                     <span className={styles.episodeInfo}>
                       <span className={styles.episodeTitle}>
@@ -158,7 +203,13 @@ export default function SeriesEpisodeSelector({ seasons, trailerUrl }) {
       {mode === 'trailer' ? (
         <VideoPlayer src={trailerUrl} title="Трейлер" />
       ) : mode === 'episode' ? (
-        <VideoPlayer src={selectedEpisode?.videoUrl || null} />
+        <>
+          <VideoPlayer
+            src={selectedEpisode?.videoUrl || null}
+            autoPlay={autoPlayNext}
+            onEnded={playNextEpisode}
+          />
+        </>
       ) : null}
     </>
   )

@@ -16,6 +16,23 @@
   background: #020b14;
 }
 
+.autoPlayButton {
+  display: block;
+  width: calc(100% - 32px);
+  min-height: 44px;
+  margin: 0 16px 16px;
+  border: 1px solid #287ac2;
+  border-radius: 9px;
+  background: #0a1727;
+  color: #dfeaf8;
+  font: inherit;
+  cursor: pointer;
+}
+
+.autoPlayButton:hover {
+  background: #10243a;
+}
+
 .empty {
   display: flex;
   align-items: center;
