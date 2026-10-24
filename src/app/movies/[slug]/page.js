@@ -145,6 +145,8 @@ export default async function MovieDetailPage({ params }) {
       <div className={`container ${styles.playerSection}`}>
         <div id="player" className={styles.playerContainer}>
           <MoviePlayback
+            key={movie.slug}
+            movieId={movie.slug}
             movieTitle={movie.title}
             videoUrl={movie.videoUrl}
             trailerVideoId={movie.trailer_video_id}

@@ -43,6 +43,61 @@
   margin: 0 auto;
 }
 
+.progressLoading,
+.progressPrompt {
+  padding: 20px;
+  border: 1px solid rgba(126, 161, 210, 0.4);
+  border-radius: 12px;
+  background: #0a1727;
+  color: #dfeaf8;
+  text-align: center;
+}
+
+.progressLoading {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+}
+
+.progressPrompt p {
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.progressActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.continueButton,
+.restartButton {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #1689ff;
+  border-radius: 9px;
+  background: #087ef5;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.restartButton {
+  border-color: rgba(126, 161, 210, 0.5);
+  background: #10243a;
+}
+
+.continueButton:hover {
+  background: #1590ff;
+}
+
+.restartButton:hover {
+  border-color: #287ac2;
+  background: #18324b;
+}
+
 .unavailable {
   display: flex;
   align-items: center;

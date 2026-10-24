@@ -232,7 +232,13 @@ export default function VideoPlayer({
   src,
   title,
   autoPlay = false,
+  autoPlayButtonLabel = 'Запустить следующую серию',
+  initialTime = null,
   onEnded,
+  onTimeUpdate,
+  onPause,
+  onRestoreComplete,
+  onRestoreError,
 }) {
   if (!src) {
     return <div className={styles.empty}>Видео пока недоступно</div>
@@ -243,15 +249,33 @@ export default function VideoPlayer({
       key={src}
       src={src}
       title={title}
-      autoPlay={autoPlay}
+      autoPlay={autoPlay && initialTime === null}
+      autoPlayButtonLabel={autoPlayButtonLabel}
+      initialTime={initialTime}
       onEnded={onEnded}
+      onTimeUpdate={onTimeUpdate}
+      onPause={onPause}
+      onRestoreComplete={onRestoreComplete}
+      onRestoreError={onRestoreError}
     />
   )
 }
 
-function HlsVideo({ src, title, autoPlay, onEnded }) {
+function HlsVideo({
+  src,
+  title,
+  autoPlay,
+  autoPlayButtonLabel,
+  initialTime,
+  onEnded,
+  onTimeUpdate,
+  onPause,
+  onRestoreComplete,
+  onRestoreError,
+}) {
   const videoRef = useRef(null)
   const hasEnded = useRef(false)
+  const restoreStarted = useRef(false)
   const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isAutoPlayBlocked, setIsAutoPlayBlocked] = useState(false)
@@ -448,6 +472,118 @@ function HlsVideo({ src, title, autoPlay, onEnded }) {
   }, [src])
 
   useEffect(() => {
+    if (!Number.isFinite(initialTime) || initialTime <= 0) {
+      return undefined
+    }
+
+    const video = videoRef.current
+
+    if (!video) {
+      return undefined
+    }
+
+    let cancelled = false
+
+    function restorePlaybackPosition() {
+      if (
+        cancelled ||
+        restoreStarted.current ||
+        video.readyState < HTMLMediaElement.HAVE_METADATA
+      ) {
+        return
+      }
+
+      const duration = video.duration
+
+      if (!Number.isFinite(duration) || duration <= 0 || initialTime >= duration) {
+        restoreStarted.current = true
+        onRestoreError?.()
+        return
+      }
+
+      restoreStarted.current = true
+      const targetTime = Math.min(initialTime, duration - 0.5)
+      const alreadyAtTarget = Math.abs(video.currentTime - targetTime) <= 0.5
+
+      function finishSeeking() {
+        video.removeEventListener('seeked', finishSeeking)
+
+        if (cancelled) {
+          return
+        }
+
+        if (Math.abs(video.currentTime - targetTime) > 1.5) {
+          onRestoreError?.()
+          return
+        }
+
+        onRestoreComplete?.()
+        const playPromise = video.play()
+
+        if (playPromise?.then) {
+          playPromise
+            .then(() => setIsAutoPlayBlocked(false))
+            .catch((error) => {
+              if (error.name !== 'AbortError') {
+                setIsAutoPlayBlocked(true)
+              }
+            })
+        }
+      }
+
+      video.addEventListener('seeked', finishSeeking, { once: true })
+
+      try {
+        if (alreadyAtTarget) {
+          finishSeeking()
+        } else {
+          video.currentTime = targetTime
+        }
+      } catch (error) {
+        video.removeEventListener('seeked', finishSeeking)
+        onRestoreError?.(error)
+      }
+    }
+
+    video.addEventListener('loadedmetadata', restorePlaybackPosition)
+    video.addEventListener('durationchange', restorePlaybackPosition)
+    restorePlaybackPosition()
+
+    return () => {
+      cancelled = true
+      video.removeEventListener('loadedmetadata', restorePlaybackPosition)
+      video.removeEventListener('durationchange', restorePlaybackPosition)
+    }
+  }, [initialTime, onRestoreComplete, onRestoreError, src])
+
+  useEffect(() => {
+    const video = videoRef.current
+
+    if (!video) {
+      return undefined
+    }
+
+    const handleTimeUpdate = () =>
+      onTimeUpdate?.({
+        currentTime: video.currentTime,
+        duration: video.duration,
+      })
+    const handlePause = () =>
+      onPause?.({
+        currentTime: video.currentTime,
+        duration: video.duration,
+      })
+
+    video.addEventListener('timeupdate', handleTimeUpdate)
+    video.addEventListener('pause', handlePause)
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate)
+      video.removeEventListener('pause', handlePause)
+    }
+  }, [onPause, onTimeUpdate, src])
+
+  useEffect(() => {
     if (!autoPlay) {
       return undefined
     }
@@ -535,7 +671,7 @@ function HlsVideo({ src, title, autoPlay, onEnded }) {
           className={styles.autoPlayButton}
           onClick={handleManualPlay}
         >
-          Запустить следующую серию
+          {autoPlayButtonLabel}
         </button>
       ) : null}
     </div>
