@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import MovieGrid from '@/components/MovieGrid/MovieGrid'
 import {
@@ -38,22 +39,27 @@ export default function MovieCatalog({
   hrefPrefix = 'movies',
   clearSearchHref = '/movies',
 }) {
-  const [currentSort, setCurrentSort] = useState(
-    () => getMovieSort(initialSort).id
-  )
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const pageParam = searchParams.get('page')
+  const requestedPage = Number.parseInt(pageParam ?? String(initialPage), 10)
+  const currentSort = getMovieSort(
+    searchParams.get('sort') || initialSort
+  ).id
   const [isSortDialogOpen, setIsSortDialogOpen] = useState(false)
-  const previousInitialSort = useRef(initialSort)
   const sortedMovies = useMemo(
     () => sortMovies(movies, currentSort),
     [currentSort, movies]
   )
   const totalPages = Math.ceil(sortedMovies.length / PAGE_SIZE)
-  const [currentPage, setCurrentPage] = useState(() =>
-    Math.min(Math.max(initialPage, 1), Math.max(totalPages, 1))
+  const normalizedRequestedPage =
+    Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
+  const currentPage = Math.min(
+    Math.max(normalizedRequestedPage, 1),
+    Math.max(totalPages, 1)
   )
   const listRef = useRef(null)
-  const initialUrlSynced = useRef(false)
-  const previousSearchQuery = useRef(searchQuery)
+  const previousPage = useRef(currentPage)
   const visibleMovies = sortedMovies.slice(
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
@@ -72,55 +78,38 @@ export default function MovieCatalog({
     })
   }, [])
 
-  const setPageInUrl = useCallback((page, method = 'pushState') => {
+  const navigateWithQuery = useCallback((update, method = 'push') => {
     const url = new URL(window.location.href)
-    url.searchParams.set('page', String(page))
-    window.history[method]({}, '', `${url.pathname}${url.search}${url.hash}`)
-  }, [])
+    update(url.searchParams)
+    router[method](`${url.pathname}${url.search}${url.hash}`, {
+      scroll: false,
+    })
+  }, [router])
 
   const changeSort = useCallback((sortId) => {
     const nextSort = getMovieSort(sortId)
-    const url = new URL(window.location.href)
-    url.searchParams.set('sort', nextSort.id)
-    url.searchParams.set('page', '1')
-    window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`)
-    setCurrentSort(nextSort.id)
-    setCurrentPage(1)
+    navigateWithQuery((params) => {
+      params.set('sort', nextSort.id)
+      params.set('page', '1')
+    })
     setIsSortDialogOpen(false)
-  }, [])
+  }, [navigateWithQuery])
 
   useEffect(() => {
-    if (initialUrlSynced.current) {
-      return
+    if (pageParam !== null && String(currentPage) !== pageParam) {
+      navigateWithQuery(
+        (params) => params.set('page', String(currentPage)),
+        'replace'
+      )
     }
-
-    initialUrlSynced.current = true
-    const urlPage = Number.parseInt(
-      new URL(window.location.href).searchParams.get('page'),
-      10
-    )
-    const normalizedUrlPage =
-      Number.isInteger(urlPage) && urlPage > 0 ? urlPage : 1
-
-    if (normalizedUrlPage !== currentPage) {
-      setPageInUrl(currentPage, 'replaceState')
-    }
-  }, [currentPage, setPageInUrl])
+  }, [currentPage, navigateWithQuery, searchParams])
 
   useEffect(() => {
-    if (previousSearchQuery.current !== searchQuery) {
-      previousSearchQuery.current = searchQuery
-      setCurrentPage(1)
+    if (previousPage.current !== currentPage) {
+      previousPage.current = currentPage
+      window.requestAnimationFrame(scrollToList)
     }
-  }, [searchQuery])
-
-  useEffect(() => {
-    if (previousInitialSort.current !== initialSort) {
-      previousInitialSort.current = initialSort
-      setCurrentSort(getMovieSort(initialSort).id)
-      setCurrentPage(1)
-    }
-  }, [initialSort])
+  }, [currentPage, scrollToList])
 
   useEffect(() => {
     if (!isSortDialogOpen) {
@@ -143,37 +132,12 @@ export default function MovieCatalog({
     }
   }, [isSortDialogOpen])
 
-  useEffect(() => {
-    function handlePopState() {
-      const url = new URL(window.location.href)
-      const urlPage = Number.parseInt(url.searchParams.get('page'), 10)
-      const requestedPage =
-        Number.isInteger(urlPage) && urlPage > 0 ? urlPage : 1
-      const nextPage = Math.min(requestedPage, Math.max(totalPages, 1))
-      const nextSort = getMovieSort(url.searchParams.get('sort')).id
-
-      if (nextPage !== currentPage) {
-        setCurrentPage(nextPage)
-        window.requestAnimationFrame(scrollToList)
-      }
-
-      if (nextSort !== currentSort) {
-        setCurrentSort(nextSort)
-      }
-    }
-
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [currentPage, currentSort, scrollToList, totalPages])
-
   function changePage(page) {
     if (page < 1 || page > totalPages || page === currentPage) {
       return
     }
 
-    setPageInUrl(page)
-    setCurrentPage(page)
-    window.requestAnimationFrame(scrollToList)
+    navigateWithQuery((params) => params.set('page', String(page)))
   }
 
   const pageNumbers = getPageNumbers(currentPage, totalPages)
