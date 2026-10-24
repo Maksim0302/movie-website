@@ -80,9 +80,7 @@ async function hydrateSeries(series, includeEpisodes = false) {
               runtime: episode.duration_minutes,
               videoUrl: getVideoUrl(episode.video_path),
             }))
-            .filter((episode) => episode.videoUrl),
         }))
-        .filter((season) => season.episodes.length > 0)
     }
 
     return result

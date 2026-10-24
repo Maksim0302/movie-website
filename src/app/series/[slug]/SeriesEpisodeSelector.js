@@ -57,10 +57,32 @@ function getEpisodeKey(seasonNumber, episodeNumber) {
   return `${seasonNumber}:${episodeNumber}`
 }
 
+function getEpisodeCountLabel(count) {
+  const lastTwoDigits = count % 100
+  const lastDigit = count % 10
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return `${count} серий`
+  }
+
+  if (lastDigit === 1) {
+    return `${count} серия`
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return `${count} серии`
+  }
+
+  return `${count} серий`
+}
+
 export default function SeriesEpisodeSelector({ seasons, trailerUrl }) {
   const { mode, setMode, selectedSeasonNumber, setSelectedSeasonNumber } =
     useContext(SeriesPlaybackContext)
   const firstSeason = seasons[0]
+  const [expandedSeasonNumber, setExpandedSeasonNumber] = useState(
+    firstSeason?.seasonNumber ?? null
+  )
   const [selectedEpisodeKey, setSelectedEpisodeKey] = useState(
     firstSeason?.episodes[0]
       ? getEpisodeKey(
@@ -70,15 +92,17 @@ export default function SeriesEpisodeSelector({ seasons, trailerUrl }) {
       : null
   )
   const [autoPlayNext, setAutoPlayNext] = useState(false)
-  const availableEpisodes = seasons.flatMap((season) =>
-    season.episodes
-      .filter((episode) => episode.videoUrl)
-      .map((episode) => ({ ...episode, seasonNumber: season.seasonNumber }))
-  ).sort(
-    (first, second) =>
-      first.seasonNumber - second.seasonNumber ||
-      first.episodeNumber - second.episodeNumber
-  )
+  const availableEpisodes = seasons
+    .flatMap((season) =>
+      season.episodes
+        .filter((episode) => episode.videoUrl)
+        .map((episode) => ({ ...episode, seasonNumber: season.seasonNumber }))
+    )
+    .sort(
+      (first, second) =>
+        first.seasonNumber - second.seasonNumber ||
+        first.episodeNumber - second.episodeNumber
+    )
   const selectedEpisode = seasons
     .find((season) => season.seasonNumber === selectedSeasonNumber)
     ?.episodes.find(
@@ -93,20 +117,15 @@ export default function SeriesEpisodeSelector({ seasons, trailerUrl }) {
     }
   }, [mode])
 
-  function selectSeason(season) {
-    setSelectedSeasonNumber(season.seasonNumber)
-    const firstEpisode = season.episodes[0]
-    setMode('episode')
-    setAutoPlayNext(false)
-    setSelectedEpisodeKey(
-      firstEpisode
-        ? getEpisodeKey(season.seasonNumber, firstEpisode.episodeNumber)
-        : null
+  function toggleSeason(seasonNumber) {
+    setExpandedSeasonNumber((currentSeasonNumber) =>
+      currentSeasonNumber === seasonNumber ? null : seasonNumber
     )
   }
 
-  function selectEpisode(episodeKey) {
-    setSelectedEpisodeKey(episodeKey)
+  function selectEpisode(seasonNumber, episodeNumber) {
+    setSelectedSeasonNumber(seasonNumber)
+    setSelectedEpisodeKey(getEpisodeKey(seasonNumber, episodeNumber))
     setAutoPlayNext(false)
     setMode('episode')
   }
@@ -133,83 +152,125 @@ export default function SeriesEpisodeSelector({ seasons, trailerUrl }) {
     setSelectedEpisodeKey(
       getEpisodeKey(nextEpisode.seasonNumber, nextEpisode.episodeNumber)
     )
+    setExpandedSeasonNumber(nextEpisode.seasonNumber)
     setAutoPlayNext(true)
   }
 
   return (
     <>
-      {seasons.length > 0 ? (
-        <>
-          <div className={styles.seasonSelector} aria-label="Выбор сезона">
-            {seasons.map((season) => (
-              <button
-                key={season.seasonNumber}
-                type="button"
-                className={`${styles.seasonButton} ${
-                  selectedSeasonNumber === season.seasonNumber
-                    ? styles.activeSeasonButton
-                    : ''
-                }`}
-                aria-pressed={selectedSeasonNumber === season.seasonNumber}
-                onClick={() => selectSeason(season)}
-              >
-                {season.seasonNumber} сезон
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.episodeGrid}>
-            {seasons
-              .find((season) => season.seasonNumber === selectedSeasonNumber)
-              ?.episodes.map((episode) => {
-                const episodeKey = getEpisodeKey(
-                  selectedSeasonNumber,
-                  episode.episodeNumber
-                )
-                const isSelected = selectedEpisodeKey === episodeKey
-
-                return (
-                  <button
-                    key={episodeKey}
-                    type="button"
-                    className={`${styles.episodeCard} ${
-                      isSelected && mode === 'episode'
-                        ? styles.activeEpisodeCard
-                        : ''
-                    }`}
-                    aria-pressed={isSelected && mode === 'episode'}
-                    onClick={() => selectEpisode(episodeKey)}
-                  >
-                    <span className={styles.episodeInfo}>
-                      <span className={styles.episodeTitle}>
-                        {episode.episodeNumber} серия
-                      </span>
-                      {episode.runtime ? (
-                        <span className={styles.episodeRuntime}>
-                          {episode.runtime} мин
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className={styles.episodePlayIcon} aria-hidden="true">
-                      ▶
-                    </span>
-                  </button>
-                )
-              })}
-          </div>
-        </>
-      ) : null}
-
       {mode === 'trailer' ? (
         <VideoPlayer src={trailerUrl} title="Трейлер" />
       ) : mode === 'episode' ? (
-        <>
-          <VideoPlayer
-            src={selectedEpisode?.videoUrl || null}
-            autoPlay={autoPlayNext}
-            onEnded={playNextEpisode}
-          />
-        </>
+        <VideoPlayer
+          src={selectedEpisode?.videoUrl || null}
+          autoPlay={autoPlayNext}
+          onEnded={playNextEpisode}
+        />
+      ) : null}
+
+      {seasons.length > 0 ? (
+        <section
+          className={styles.seasonsSection}
+          aria-labelledby="seasons-title"
+        >
+          <h2 id="seasons-title" className={styles.seasonsTitle}>
+            Сезоны
+          </h2>
+
+          <div className={styles.seasonAccordion}>
+            {seasons.map((season) => {
+              const isExpanded = expandedSeasonNumber === season.seasonNumber
+              const episodes = season.episodes || []
+              const seasonPanelId = `season-episodes-${season.seasonNumber}`
+
+              return (
+                <section
+                  className={`${styles.seasonItem} ${
+                    isExpanded ? styles.expandedSeason : ''
+                  }`}
+                  key={season.seasonNumber}
+                >
+                  <h3 className={styles.seasonHeading}>
+                    <button
+                      type="button"
+                      className={styles.seasonButton}
+                      aria-expanded={isExpanded}
+                      aria-controls={seasonPanelId}
+                      onClick={() => toggleSeason(season.seasonNumber)}
+                    >
+                      <span>{season.seasonNumber} сезон</span>
+                      <span className={styles.seasonSummary}>
+                        {getEpisodeCountLabel(episodes.length)}
+                      </span>
+                      <span
+                        className={`${styles.seasonChevron} ${
+                          isExpanded ? styles.chevronExpanded : ''
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </h3>
+
+                  <div
+                    id={seasonPanelId}
+                    className={styles.episodeList}
+                    hidden={!isExpanded}
+                  >
+                    {episodes.length ? (
+                      episodes.map((episode) => {
+                        const episodeKey = getEpisodeKey(
+                          season.seasonNumber,
+                          episode.episodeNumber
+                        )
+                        const isSelected =
+                          selectedEpisodeKey === episodeKey &&
+                          mode === 'episode'
+
+                        return (
+                          <button
+                            key={episodeKey}
+                            type="button"
+                            className={`${styles.episodeRow} ${
+                              isSelected ? styles.activeEpisodeRow : ''
+                            }`}
+                            aria-pressed={isSelected}
+                            aria-label={`Воспроизвести ${episode.episodeNumber} серию`}
+                            onClick={() =>
+                              selectEpisode(
+                                season.seasonNumber,
+                                episode.episodeNumber
+                              )
+                            }
+                          >
+                            <span className={styles.episodeNumber}>
+                              {episode.episodeNumber} серия
+                            </span>
+                            <span className={styles.episodeSpacer} />
+                            {episode.runtime ? (
+                              <span className={styles.episodeRuntime}>
+                                {episode.runtime} мин
+                              </span>
+                            ) : null}
+                            <span
+                              className={styles.episodePlayIcon}
+                              aria-hidden="true"
+                            >
+                              ▶
+                            </span>
+                          </button>
+                        )
+                      })
+                    ) : (
+                      <p className={styles.emptyEpisodes}>
+                        В этом сезоне пока нет доступных серий.
+                      </p>
+                    )}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        </section>
       ) : null}
     </>
   )

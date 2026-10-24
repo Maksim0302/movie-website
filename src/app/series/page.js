@@ -7,7 +7,8 @@ export const revalidate = 60
 
 export const metadata = {
   title: 'Сериалы',
-  description: 'Смотрите сериалы онлайн в каталоге КиноТерапии — детективы, драмы, фантастика и популярные новинки.',
+  description:
+    'Смотрите сериалы онлайн в каталоге КиноТерапии — детективы, драмы, фантастика и популярные новинки.',
   alternates: {
     canonical: '/series',
   },
@@ -17,7 +18,14 @@ export const metadata = {
       'Смотрите сериалы онлайн в каталоге КиноТерапии — детективы, драмы, фантастика и популярные новинки.',
     url: '/series',
     type: 'website',
-    images: [{ url: getAbsoluteUrl('/img/logo/logo.png'), width: 512, height: 512, alt: 'КиноТерапия' }],
+    images: [
+      {
+        url: getAbsoluteUrl('/img/logo/logo.png'),
+        width: 512,
+        height: 512,
+        alt: 'КиноТерапия',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
